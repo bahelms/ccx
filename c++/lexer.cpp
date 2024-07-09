@@ -1,7 +1,10 @@
 #include <format>
 #include <iostream>
 #include <regex>
+#include <sstream>
+#include <stdexcept>
 
+#include "doctest.h"
 #include "lexer.h"
 
 std::vector<Token> Lexer::generate_tokens() {
@@ -14,7 +17,6 @@ std::vector<Token> Lexer::generate_tokens() {
     const std::regex whitespace("\\s");
 
     while (_stream.get(ch)) {
-        std::cout << ch;
         std::string str_ch(1, ch);
 
         if (ch == ';') {
@@ -52,9 +54,10 @@ std::vector<Token> Lexer::generate_tokens() {
         } else if (std::regex_match(str_ch, identifier)) {
             std::string first_char(1, char_buffer[0]);
             if (std::regex_match(first_char, constant)) {
-                Token token(char_buffer);
-                tokens.emplace_back(token);
-                char_buffer.clear();
+                char_buffer.push_back(ch);
+                throw std::invalid_argument(std::format(
+                    "syntax error: identifiers can't begin with a digit - {}",
+                    char_buffer));
             }
             char_buffer.push_back(ch);
         } else {
@@ -63,4 +66,13 @@ std::vector<Token> Lexer::generate_tokens() {
         }
     }
     return tokens;
+}
+
+TEST_CASE("identifiers can't start with a digit") {
+    std::stringstream source("2foo");
+    Lexer lex(source);
+    REQUIRE_THROWS_WITH_AS(
+        lex.generate_tokens(),
+        "syntax error: identifiers can't begin with a digit - 2f",
+        std::invalid_argument);
 }

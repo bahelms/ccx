@@ -11,10 +11,10 @@ class Token {
 };
 
 class Lexer {
-    std::ifstream &_stream;
+    std::istream &_stream;
 
   public:
-    Lexer(std::ifstream &s) : _stream(s){};
+    Lexer(std::istream &s) : _stream(s){};
 
     std::vector<Token> generate_tokens();
 };
