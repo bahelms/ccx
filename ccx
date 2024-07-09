@@ -5,11 +5,37 @@
 # GCC is used for preproccesing, assembling, and linking.
 
 INPUT_FILE=$1
-
 if [[ -z $INPUT_FILE ]]; then
   echo "No input file specified"
   exit 1
 fi
+
+set_input_file ()
+{
+  INPUT_FILE=$1
+  if [[ -z $INPUT_FILE ]]; then
+    echo "No input file specified"
+    exit 1
+  fi
+}
+
+case $INPUT_FILE in
+  "--lex")
+  COMPILER_STAGE_OPTION=0
+  set_input_file $2
+  ;;
+  "--parse")
+  COMPILER_STAGE_OPTION=1
+  set_input_file $2
+  ;;
+  "--codegen")
+  COMPILER_STAGE_OPTION=2
+  set_input_file $2
+  ;;
+  *)
+  COMPILER_STAGE_OPTION=3
+  ;;
+esac
 
 # Preproccesor
 PREPROCCESOR_FILE="${INPUT_FILE%?}i"

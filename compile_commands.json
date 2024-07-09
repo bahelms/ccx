@@ -1,0 +1,5 @@
+[
+  { "directory": "/home/jb/src/c_compiler/",
+    "arguments": ["/usr/bin/clang++", "-Wall", "-std=c++2a", "-o", "file.o", "file.cpp"],
+    "file": "file.cpp" }
+]
