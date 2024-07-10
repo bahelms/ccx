@@ -4,3 +4,6 @@ compiler: main.cpp lexer.cpp
 test: compiler
 	../bin/compiler --exit
 
+debug_test: main.cpp lexer.cpp
+	clang++ -Wall -std=c++2a -g -o main_debug.out $^
+	gdb main_debug.out -- --exit
