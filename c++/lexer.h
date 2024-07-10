@@ -1,12 +1,13 @@
 #pragma once
 
+#include <exception>
 #include <fstream>
 #include <string>
 #include <vector>
 
 class Token {
   public:
-    Token(std::string v) : _value(v){};
+    Token(std::string v) : _value(v) {}
 
     std::string value() const { return _value; }
 
@@ -16,14 +17,24 @@ class Token {
 
 class Lexer {
   public:
-    Lexer(std::istream &s) : stream(s){};
+    Lexer(std::istream &s) : _stream(s) {}
 
-    std::vector<Token> generate_tokens();
+    const std::vector<Token> &generate_tokens();
 
   private:
-    std::istream &stream;
-    std::string char_buffer;
-    std::vector<Token> tokens;
+    std::istream &_stream;
+    std::string _char_buffer;
+    std::vector<Token> _tokens;
 
     void flush_char_buffer();
+};
+
+class SyntaxError : public std::exception {
+  public:
+    SyntaxError(const std::string &msg) : _message(msg) {}
+
+    const char *what() const noexcept override { return _message.c_str(); }
+
+  private:
+    std::string _message;
 };

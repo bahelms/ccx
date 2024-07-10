@@ -11,65 +11,63 @@ const std::regex identifier("[a-zA-Z_0-9]");
 const std::regex constant("[0-9]");
 const std::regex whitespace("\\s");
 
-std::vector<Token> Lexer::generate_tokens() {
+const std::vector<Token> &Lexer::generate_tokens() {
     char ch;
 
-    while (stream.get(ch)) {
+    while (_stream.get(ch)) {
         std::string str_ch(1, ch);
 
         if (std::regex_match(str_ch, constant)) {
-            char_buffer.push_back(ch);
+            _char_buffer.push_back(ch);
         } else if (std::regex_match(str_ch, identifier)) {
-            std::string first_char(1, char_buffer[0]);
-            char_buffer.push_back(ch);
+            std::string first_char(1, _char_buffer[0]);
+            _char_buffer.push_back(ch);
             if (std::regex_match(first_char, constant)) {
-                throw std::invalid_argument(std::format(
-                    "syntax error: identifiers can't begin with a digit - {}",
-                    char_buffer));
+                throw SyntaxError(std::format(
+                    "Identifiers can't begin with a digit: {}", _char_buffer));
             }
         } else if (std::regex_match(str_ch, whitespace)) {
             flush_char_buffer();
         } else if (ch == ';') {
             flush_char_buffer();
             Token semicolon(";");
-            tokens.emplace_back(semicolon);
+            _tokens.emplace_back(semicolon);
         } else if (ch == '(') {
             flush_char_buffer();
             Token lparen("(");
-            tokens.emplace_back(lparen);
+            _tokens.emplace_back(lparen);
         } else if (ch == ')') {
             flush_char_buffer();
             Token rparen(")");
-            tokens.emplace_back(rparen);
+            _tokens.emplace_back(rparen);
         } else if (ch == '{') {
             Token token("{");
-            tokens.emplace_back(token);
+            _tokens.emplace_back(token);
         } else if (ch == '}') {
             Token token("}");
-            tokens.emplace_back(token);
+            _tokens.emplace_back(token);
         } else {
-            throw std::invalid_argument(std::format(
-                "Lexical error - char: {} - buffer: {}", ch, char_buffer));
+            throw SyntaxError(std::format("Unknown character: {} - buffer: {}",
+                                          ch, _char_buffer));
         }
     }
-    return tokens;
+    return _tokens;
 }
 
 void Lexer::flush_char_buffer() {
-    if (!char_buffer.empty()) {
-        Token token(char_buffer);
-        tokens.emplace_back(token);
-        char_buffer.clear();
+    if (!_char_buffer.empty()) {
+        Token token(_char_buffer);
+        _tokens.emplace_back(token);
+        _char_buffer.clear();
     }
 }
 
 TEST_CASE("identifiers can't start with a digit") {
     std::stringstream source("2foo");
     Lexer lex(source);
-    REQUIRE_THROWS_WITH_AS(
-        lex.generate_tokens(),
-        "syntax error: identifiers can't begin with a digit - 2f",
-        std::invalid_argument);
+    REQUIRE_THROWS_WITH_AS(lex.generate_tokens(),
+                           "Identifiers can't begin with a digit: 2f",
+                           SyntaxError);
 }
 
 TEST_CASE("identifiers can have digits") {
