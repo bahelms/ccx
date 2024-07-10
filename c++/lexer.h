@@ -16,12 +16,12 @@ class Token {
 
 class Lexer {
   public:
-    Lexer(std::istream &s) : _stream(s){};
+    Lexer(std::istream &s) : stream(s){};
 
     std::vector<Token> generate_tokens();
 
   private:
-    std::istream &_stream;
+    std::istream &stream;
     std::string char_buffer;
     std::vector<Token> tokens;
 

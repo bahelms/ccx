@@ -2,7 +2,6 @@
 set -e
 
 #### This is the compiler driver ####
-#
 # GCC is used for preproccesing, assembling, and linking.
 
 INPUT_FILE=$1
@@ -39,7 +38,7 @@ case $INPUT_FILE in
 esac
 
 # Move to compiler dir
-PARENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)
+PARENT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
 cd $PARENT_PATH
 
 # Preproccesor

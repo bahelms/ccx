@@ -14,20 +14,19 @@ const std::regex whitespace("\\s");
 std::vector<Token> Lexer::generate_tokens() {
     char ch;
 
-    while (_stream.get(ch)) {
+    while (stream.get(ch)) {
         std::string str_ch(1, ch);
 
         if (std::regex_match(str_ch, constant)) {
             char_buffer.push_back(ch);
         } else if (std::regex_match(str_ch, identifier)) {
             std::string first_char(1, char_buffer[0]);
+            char_buffer.push_back(ch);
             if (std::regex_match(first_char, constant)) {
-                char_buffer.push_back(ch);
                 throw std::invalid_argument(std::format(
                     "syntax error: identifiers can't begin with a digit - {}",
                     char_buffer));
             }
-            char_buffer.push_back(ch);
         } else if (std::regex_match(str_ch, whitespace)) {
             flush_char_buffer();
         } else if (ch == ';') {
