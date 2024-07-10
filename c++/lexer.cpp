@@ -30,22 +30,17 @@ const std::vector<Token> &Lexer::generate_tokens() {
             flush_char_buffer();
         } else if (ch == ';') {
             flush_char_buffer();
-            Token semicolon(";");
-            _tokens.emplace_back(semicolon);
+            _tokens.emplace_back(Token(";"));
         } else if (ch == '(') {
             flush_char_buffer();
-            Token lparen("(");
-            _tokens.emplace_back(lparen);
+            _tokens.emplace_back(Token("("));
         } else if (ch == ')') {
             flush_char_buffer();
-            Token rparen(")");
-            _tokens.emplace_back(rparen);
+            _tokens.emplace_back(Token(")"));
         } else if (ch == '{') {
-            Token token("{");
-            _tokens.emplace_back(token);
+            _tokens.emplace_back(Token("{"));
         } else if (ch == '}') {
-            Token token("}");
-            _tokens.emplace_back(token);
+            _tokens.emplace_back(Token("}"));
         } else {
             throw SyntaxError(std::format("Unknown character: {} - buffer: {}",
                                           ch, _char_buffer));
@@ -56,8 +51,7 @@ const std::vector<Token> &Lexer::generate_tokens() {
 
 void Lexer::flush_char_buffer() {
     if (!_char_buffer.empty()) {
-        Token token(_char_buffer);
-        _tokens.emplace_back(token);
+        _tokens.emplace_back(_char_buffer);
         _char_buffer.clear();
     }
 }
@@ -88,7 +82,7 @@ TEST_CASE("constant token") {
 }
 
 TEST_CASE("whitespace is ignored") {
-    std::stringstream source(" \n\t ;");
+    std::stringstream source(" \n\t ;  ");
     Lexer lex(source);
     auto tokens = lex.generate_tokens();
     REQUIRE(tokens.size() == 1);
