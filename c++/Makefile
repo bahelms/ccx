@@ -1,4 +1,4 @@
-compiler: main.cpp lexer.cpp
+compiler: main.cpp lexer.cpp parser.cpp
 	clang++ -Wall -std=c++2a -o ../bin/compiler $^
 
 test: compiler

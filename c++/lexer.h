@@ -7,6 +7,7 @@
 
 class Token {
   public:
+    Token() = default;
     Token(std::string v) : _value(v) {}
 
     std::string value() const { return _value; }

@@ -13,7 +13,6 @@ const std::regex whitespace("\\s");
 
 const std::vector<Token> &Lexer::generate_tokens() {
     char ch;
-
     while (_stream.get(ch)) {
         std::string str_ch(1, ch);
 

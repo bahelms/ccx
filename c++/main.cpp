@@ -6,6 +6,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest.h"
 #include "lexer.h"
+#include "parser.h"
 
 int main(int argc, char *argv[]) {
     doctest::Context ctx;
@@ -19,10 +20,8 @@ int main(int argc, char *argv[]) {
     if (file) {
         Lexer lexer(file);
         auto tokens = lexer.generate_tokens();
-
-        for (auto token : tokens) {
-            std::cout << "Token: " << token.value() << std::endl;
-        }
+        Parser parser(tokens);
+        parser.parse();
     }
 
     return test_results;
