@@ -6,36 +6,36 @@
 #include <vector>
 
 class Token {
-  public:
-    Token() = default;
-    Token(std::string v) : _value(v) {}
+public:
+  Token() = default;
+  Token(std::string v) : _value(v) {}
 
-    std::string value() const { return _value; }
+  std::string value() const { return _value; }
 
-  private:
-    std::string _value;
+private:
+  std::string _value{};
 };
 
 class Lexer {
-  public:
-    Lexer(std::istream &s) : _stream(s) {}
+public:
+  Lexer(std::istream &s) : _stream(s) {}
 
-    const std::vector<Token> &generate_tokens();
+  const std::vector<Token> &generate_tokens();
 
-  private:
-    std::istream &_stream;
-    std::string _char_buffer;
-    std::vector<Token> _tokens;
+private:
+  std::istream &_stream;
+  std::string _char_buffer{};
+  std::vector<Token> _tokens;
 
-    void flush_char_buffer();
+  void flush_char_buffer();
 };
 
 class SyntaxError : public std::exception {
-  public:
-    SyntaxError(const std::string &msg) : _message(msg) {}
+public:
+  SyntaxError(const std::string &msg) : _message(msg) {}
 
-    const char *what() const noexcept override { return _message.c_str(); }
+  const char *what() const noexcept override { return _message.c_str(); }
 
-  private:
-    std::string _message;
+private:
+  std::string _message;
 };
