@@ -37,31 +37,33 @@ class Return : public Statement {
     Return(auto e) : _exp(std::move(e)) {}
 
     std::string const to_string() {
-        return std::format("Return(\n  {}\n)", _exp->to_string());
+        return std::format("Return({})", _exp->to_string());
     }
 };
 
 class Function {
     std::string _name{};
-    Statement &_body;
+    std::unique_ptr<Statement> _body;
 
   public:
-    Function(auto n, auto b) : _name(n), _body(b) {}
+    Function(auto n, auto b) : _name(n), _body(std::move(b)) {}
 
-    std::string to_string() {
-        return std::format("Function(\n  name={},\n  body={})", _name,
-                           _body.to_string());
+    std::string to_string(int indent = 0) {
+        int next_lvl = indent + 2;
+        return std::format(
+            "Function(\n{:<{}}name=\"{}\",\n{:<{}}body={}\n{:<{}})", "",
+            next_lvl, _name, "", next_lvl, _body->to_string(), "", indent);
     }
 };
 
-class Program {
-    Function _fn;
+class AST {
+    std::unique_ptr<Function> _fn;
 
   public:
-    Program(auto fn) : _fn(fn) {}
+    AST(auto fn) : _fn(std::move(fn)) {}
 
     std::string to_string() {
-        return std::format("Program(\n  {}\n)", _fn.to_string());
+        return std::format("Program(\n  {}\n)", _fn->to_string(2));
     }
 };
 
@@ -74,7 +76,8 @@ class Parser {
   public:
     Parser(auto t) : _tokens(t) {}
 
-    void parse();
+    AST parse();
     std::unique_ptr<Exp> parse_exp();
     std::unique_ptr<Statement> parse_statement();
+    std::unique_ptr<Function> parse_function();
 };

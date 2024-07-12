@@ -7,8 +7,8 @@
 #include "doctest.h"
 #include "lexer.h"
 
-const std::regex identifier("[a-zA-Z_0-9]");
-const std::regex constant("[0-9]");
+const std::regex identifier("[a-zA-Z_]\\w*");
+const std::regex constant("[0-9]+");
 const std::regex whitespace("\\s");
 
 const std::vector<Token> &Lexer::generate_tokens() {
@@ -16,16 +16,7 @@ const std::vector<Token> &Lexer::generate_tokens() {
     while (_stream.get(ch)) {
         std::string str_ch(1, ch);
 
-        if (std::regex_match(str_ch, constant)) {
-            _char_buffer.push_back(ch);
-        } else if (std::regex_match(str_ch, identifier)) {
-            std::string first_char(1, _char_buffer[0]);
-            _char_buffer.push_back(ch);
-            if (std::regex_match(first_char, constant)) {
-                throw SyntaxError(std::format(
-                    "Identifiers can't begin with a digit: {}", _char_buffer));
-            }
-        } else if (std::regex_match(str_ch, whitespace)) {
+        if (std::regex_match(str_ch, whitespace)) {
             flush_char_buffer();
         } else if (ch == ';') {
             flush_char_buffer();
@@ -41,8 +32,7 @@ const std::vector<Token> &Lexer::generate_tokens() {
         } else if (ch == '}') {
             _tokens.emplace_back(Token("}"));
         } else {
-            throw SyntaxError(std::format("Unknown character: {} - buffer: {}",
-                                          ch, _char_buffer));
+            _char_buffer.push_back(ch);
         }
     }
     return _tokens;
@@ -50,16 +40,23 @@ const std::vector<Token> &Lexer::generate_tokens() {
 
 void Lexer::flush_char_buffer() {
     if (!_char_buffer.empty()) {
-        _tokens.emplace_back(_char_buffer);
+        if (std::regex_match(_char_buffer, constant)) {
+            _tokens.emplace_back(_char_buffer, TokenType::Constant);
+        } else if (std::regex_match(_char_buffer, identifier)) {
+            _tokens.emplace_back(_char_buffer, TokenType::Identifier);
+        } else {
+            throw SyntaxError(std::format(
+                "Identifiers can't begin with a digit: {}", _char_buffer));
+        }
         _char_buffer.clear();
     }
 }
 
 TEST_CASE("identifiers can't start with a digit") {
-    std::stringstream source("2foo");
+    std::stringstream source("2foo;");
     Lexer lex(source);
     REQUIRE_THROWS_WITH_AS(lex.generate_tokens(),
-                           "Identifiers can't begin with a digit: 2f",
+                           "Identifiers can't begin with a digit: 2foo",
                            SyntaxError);
 }
 
@@ -67,8 +64,10 @@ TEST_CASE("identifiers can have digits") {
     std::stringstream source("i2x6(");
     Lexer lex(source);
     auto tokens = lex.generate_tokens();
-    REQUIRE(tokens[0].value() == "i2x6");
+    CHECK(tokens[0].value() == "i2x6");
+    CHECK(tokens[0].type() == TokenType::Identifier);
     CHECK(tokens[1].value() == "(");
+    CHECK(tokens[1].type() == TokenType::Punct);
 }
 
 TEST_CASE("constant token") {
@@ -76,7 +75,9 @@ TEST_CASE("constant token") {
     Lexer lex(source);
     auto tokens = lex.generate_tokens();
     const Token &constant = tokens[0];
-    REQUIRE(constant.value() == "2246");
+    std::cout << "second token" << tokens[1].value() << std::endl;
+    CHECK(constant.value() == "2246");
+    CHECK(constant.type() == TokenType::Constant);
     CHECK(tokens[1].value() == ";");
 }
 
