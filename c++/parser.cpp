@@ -6,9 +6,6 @@
 #include "parser.h"
 
 AST Parser::parse() {
-    /* for (auto token : _tokens) { */
-    /*     std::cout << "Token: " << token.value() << std::endl; */
-    /* } */
     auto fn = parse_function();
     if (_current_token != _tokens.size()) {
         throw SyntaxError(std::format("Unexpected token found: {}",
@@ -16,7 +13,6 @@ AST Parser::parse() {
     }
 
     AST ast(std::move(fn));
-    std::cout << ast.to_string() << std::endl;
     return ast;
 }
 

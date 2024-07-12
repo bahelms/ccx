@@ -1,12 +1,36 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest.h"
 #include "lexer.h"
 #include "parser.h"
+
+enum class Stage { Lex, Parse, Codegen, All };
+
+void compile(Stage stage, std::string filename) {
+    std::ifstream file(filename);
+    if (file) {
+        Lexer lexer(file);
+        auto tokens = lexer.generate_tokens();
+        if (stage == Stage::Lex) {
+            for (auto token : tokens) {
+                std::cout << "Token: " << token.value() << std::endl;
+            }
+            return;
+        }
+
+        Parser parser(tokens);
+        auto ast = parser.parse();
+        if (stage == Stage::Parse) {
+            std::cout << ast.to_string() << std::endl;
+            return;
+        }
+    }
+}
 
 int main(int argc, char *argv[]) {
     doctest::Context ctx;
@@ -16,13 +40,6 @@ int main(int argc, char *argv[]) {
         return test_results;
     }
 
-    std::ifstream file(argv[1]);
-    if (file) {
-        Lexer lexer(file);
-        auto tokens = lexer.generate_tokens();
-        Parser parser(tokens);
-        parser.parse();
-    }
-
+    compile(Stage(std::stoi(argv[2])), argv[1]);
     return test_results;
 }
