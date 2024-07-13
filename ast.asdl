@@ -1,4 +1,4 @@
--- The abstract syntax definition of ccx
+-- The abstract syntax definition of C
 
 program = Program(function_definition)
 function_definition = Function(identifier name, statement body)

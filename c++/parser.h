@@ -8,7 +8,6 @@
 class Exp {
   public:
     virtual ~Exp() = default;
-
     virtual std::string const to_string() = 0;
 };
 
@@ -18,6 +17,7 @@ class Constant : public Exp {
   public:
     Constant(std::string v) : _value(v) {}
 
+    auto value() const { return _value; }
     std::string const to_string() override {
         return std::format("Constant({})", _value);
     }
@@ -26,7 +26,6 @@ class Constant : public Exp {
 class Statement {
   public:
     virtual ~Statement() = default;
-
     virtual std::string const to_string() = 0;
 };
 
@@ -36,6 +35,7 @@ class Return : public Statement {
   public:
     Return(auto e) : _exp(std::move(e)) {}
 
+    auto exp() { return std::move(_exp); }
     std::string const to_string() {
         return std::format("Return({})", _exp->to_string());
     }
@@ -60,6 +60,7 @@ class AST {
     std::unique_ptr<Function> _fn;
 
   public:
+    AST() = default;
     AST(auto fn) : _fn(std::move(fn)) {}
 
     std::string to_string() {

@@ -1,0 +1,9 @@
+-- The abstract syntax definition of the assembly code
+
+program = Program(function_definition)
+function_definition = Function(identifier name, instruction* instruction)
+instruction = Mov(operand src, operand dst) | Ret
+operand = Imm(int) | Register
+
+// * = field is a list
+// Imm = immediate value (constant)
