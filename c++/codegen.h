@@ -20,7 +20,7 @@ class Imm : public Operand {
     std::string const to_string() { return std::format("Imm({})", _value); }
 };
 
-class Register : Operand {
+class Register : public Operand {
   public:
     std::string const to_string() { return "Register"; }
 };
@@ -36,7 +36,9 @@ class Mov : public Instruction {
     std::unique_ptr<Operand> _dst{};
 
   public:
-    Mov(auto s, auto d) : _src(std::move(s)), _dst(std::move(d)) {}
+    Mov(std::unique_ptr<Operand> s, std::unique_ptr<Operand> d)
+        : _src(std::move(s)), _dst(std::move(d)) {}
+
     std::string const to_string() {
         return std::format("Mov({}, {})", _src->to_string(), _dst->to_string());
     }

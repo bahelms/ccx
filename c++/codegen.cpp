@@ -5,8 +5,11 @@
 
 std::array<std::unique_ptr<ASM::Instruction>, 2>
 ASM::Codegen::parse_instructions(std::unique_ptr<Return> &stmt) {
-    std::array<std::unique_ptr<Instruction>, 2> instrs{std::make_unique<Mov>(
-        parse_operand(stmt->exp()), std::make_unique<Register>())};
+    std::array<std::unique_ptr<Instruction>, 2> instrs{
+        std::make_unique<Mov>(parse_operand(stmt->exp()),
+                              std::make_unique<Register>()),
+        std::make_unique<ASM::Ret>()};
+
     return instrs;
 }
 
@@ -25,7 +28,7 @@ TEST_CASE("parsing a return statement produces mov and ret instructions") {
     auto stmt = std::make_unique<Return>(std::move(exp));
     auto instrs = gen.parse_instructions(stmt);
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "");
+    CHECK(instrs[0]->to_string() == "Mov(Imm(789), Register)");
 }
 
 TEST_CASE("constants generate immediate values") {

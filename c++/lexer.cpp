@@ -75,7 +75,6 @@ TEST_CASE("constant token") {
     Lexer lex(source);
     auto tokens = lex.generate_tokens();
     const Token &constant = tokens[0];
-    std::cout << "second token" << tokens[1].value() << std::endl;
     CHECK(constant.value() == "2246");
     CHECK(constant.type() == TokenType::Constant);
     CHECK(tokens[1].value() == ";");
