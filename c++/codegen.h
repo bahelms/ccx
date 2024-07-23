@@ -48,13 +48,13 @@ class Ret : public Instruction {
     std::string const to_string() { return "Ret"; }
 };
 
-class Function {
+class FunctionDef {
     std::string _name;
     std::vector<Instruction> _instructions;
 };
 
 class Program {
-    Function _fn_def;
+    FunctionDef _fn_def;
 };
 
 class Codegen {
@@ -64,9 +64,11 @@ class Codegen {
     Codegen() = default;
     Codegen(auto a) : _ast(a) {}
 
-    std::unique_ptr<Operand> parse_operand(std::unique_ptr<Exp> exp);
+    std::unique_ptr<Operand> parse_operand(std::unique_ptr<Exp>);
 
     std::array<std::unique_ptr<Instruction>, 2>
-    parse_instructions(std::unique_ptr<Return> &stmt);
+    parse_instructions(std::unique_ptr<Return> &);
+
+    FunctionDef parse_func(Function &);
 };
 } // namespace ASM
