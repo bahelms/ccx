@@ -49,10 +49,11 @@ class Ret : public Instruction {
 };
 
 class FunctionDef {
-    std::string _name;
-    std::vector<std::unique_ptr<Instruction>> _instructions;
+    std::string _name{};
+    std::vector<std::unique_ptr<Instruction>> _instructions{};
 
   public:
+    FunctionDef() = default;
     FunctionDef(auto n, auto i) : _name(n), _instructions(std::move(i)) {}
 
     std::string name() { return _name; }
@@ -62,21 +63,26 @@ class FunctionDef {
 };
 
 class Program {
-    FunctionDef _fn_def;
+    std::unique_ptr<FunctionDef> _fn_def{};
+
+  public:
+    Program(auto fn_def) : _fn_def(std::move(fn_def)) {}
+
+    std::unique_ptr<FunctionDef> fn_def() { return std::move(_fn_def); }
 };
 
 class Codegen {
-    AST _ast{};
+    AST _ast{}; // not used
 
   public:
     Codegen() = default;
-    Codegen(auto a) : _ast(a) {}
+
+    Program generate_program(AST &);
 
     std::unique_ptr<Operand> parse_operand(std::unique_ptr<Exp>);
-
     std::vector<std::unique_ptr<Instruction>>
         parse_instructions(std::unique_ptr<Statement>);
 
-    FunctionDef parse_func_def(std::unique_ptr<Function>);
+    std::unique_ptr<FunctionDef> parse_func_def(std::unique_ptr<Function>);
 };
 } // namespace ASM

@@ -3,10 +3,15 @@
 #include <array>
 #include <memory>
 
-ASM::FunctionDef ASM::Codegen::parse_func_def(std::unique_ptr<Function> fn) {
+ASM::Program ASM::Codegen::generate_program(AST &ast) {
+    Program program(parse_func_def(ast.fn()));
+    return program;
+}
+
+std::unique_ptr<ASM::FunctionDef>
+ASM::Codegen::parse_func_def(std::unique_ptr<Function> fn) {
     auto instrs = parse_instructions(fn->body());
-    FunctionDef def(fn->name(), std::move(instrs));
-    return def;
+    return std::make_unique<ASM::FunctionDef>(fn->name(), std::move(instrs));
 }
 
 std::vector<std::unique_ptr<ASM::Instruction>>
@@ -31,16 +36,33 @@ ASM::Codegen::parse_operand(std::unique_ptr<Exp> exp) {
 
 //// TESTS ////
 
+TEST_CASE("generating a simple program") {
+    auto stmt = std::make_unique<Return>(std::make_unique<Constant>("789"));
+    auto fn = std::make_unique<Function>("main", std::move(stmt));
+    AST ast(std::move(fn));
+
+    ASM::Codegen gen;
+    ASM::Program program = gen.generate_program(ast);
+    auto fn_def = program.fn_def();
+    auto &instrs = fn_def->instructions();
+
+    CHECK(fn_def->name() == "main");
+    CHECK(instrs.size() == 2);
+    CHECK(instrs[0]->to_string() == "Mov(Imm(789), Register)");
+    CHECK(instrs[1]->to_string() == "Ret");
+}
+
 TEST_CASE("parsing a function definition without arguments") {
     auto stmt = std::make_unique<Return>(std::make_unique<Constant>("789"));
     auto fn = std::make_unique<Function>("main", std::move(stmt));
     ASM::Codegen gen;
     auto fn_def = gen.parse_func_def(std::move(fn));
-    auto &instrs = fn_def.instructions();
+    auto &instrs = fn_def->instructions();
 
-    CHECK(fn_def.name() == "main");
+    CHECK(fn_def->name() == "main");
     CHECK(instrs.size() == 2);
     CHECK(instrs[0]->to_string() == "Mov(Imm(789), Register)");
+    CHECK(instrs[1]->to_string() == "Ret");
 }
 
 TEST_CASE("parsing a return statement produces mov and ret instructions") {
