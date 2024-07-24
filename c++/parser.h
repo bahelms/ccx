@@ -54,6 +54,9 @@ class Function {
             "Function(\n{:<{}}name=\"{}\",\n{:<{}}body={}\n{:<{}})", "",
             next_lvl, _name, "", next_lvl, _body->to_string(), "", indent);
     }
+
+    std::unique_ptr<Statement> body() { return std::move(_body); }
+    std::string name() { return _name; }
 };
 
 class AST {

@@ -50,7 +50,15 @@ class Ret : public Instruction {
 
 class FunctionDef {
     std::string _name;
-    std::vector<Instruction> _instructions;
+    std::vector<std::unique_ptr<Instruction>> _instructions;
+
+  public:
+    FunctionDef(auto n, auto i) : _name(n), _instructions(std::move(i)) {}
+
+    std::string name() { return _name; }
+    std::vector<std::unique_ptr<Instruction>> &instructions() {
+        return _instructions;
+    }
 };
 
 class Program {
@@ -66,9 +74,9 @@ class Codegen {
 
     std::unique_ptr<Operand> parse_operand(std::unique_ptr<Exp>);
 
-    std::array<std::unique_ptr<Instruction>, 2>
-    parse_instructions(std::unique_ptr<Return> &);
+    std::vector<std::unique_ptr<Instruction>>
+        parse_instructions(std::unique_ptr<Statement>);
 
-    FunctionDef parse_func(Function &);
+    FunctionDef parse_func_def(std::unique_ptr<Function>);
 };
 } // namespace ASM
