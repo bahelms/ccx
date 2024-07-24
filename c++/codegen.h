@@ -17,12 +17,12 @@ class Imm : public Operand {
     Imm(std::string s) : _value(s) {}
 
     std::string value() const { return _value; }
-    std::string const to_string() { return std::format("Imm({})", _value); }
+    std::string const to_string() { return std::format("${}", _value); }
 };
 
 class Register : public Operand {
   public:
-    std::string const to_string() { return "Register"; }
+    std::string const to_string() { return "%eax"; }
 };
 
 class Instruction {
@@ -40,12 +40,12 @@ class Mov : public Instruction {
         : _src(std::move(s)), _dst(std::move(d)) {}
 
     std::string const to_string() {
-        return std::format("Mov({}, {})", _src->to_string(), _dst->to_string());
+        return std::format("movl {}, {}", _src->to_string(), _dst->to_string());
     }
 };
 
 class Ret : public Instruction {
-    std::string const to_string() { return "Ret"; }
+    std::string const to_string() { return "ret"; }
 };
 
 class FunctionDef {

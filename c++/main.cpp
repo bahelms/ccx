@@ -5,11 +5,13 @@
 #include <vector>
 
 #define DOCTEST_CONFIG_IMPLEMENT
+/* #include "codegen.h" */
 #include "doctest.h"
+#include "emission.h"
 #include "lexer.h"
 #include "parser.h"
 
-enum class Stage { Lex, Parse, Codegen, All };
+enum class Stage { Lex, Parse, Codegen };
 
 void compile(Stage stage, std::string filename) {
     std::ifstream file(filename);
@@ -29,6 +31,14 @@ void compile(Stage stage, std::string filename) {
             std::cout << ast.to_string() << std::endl;
             return;
         }
+
+        ASM::Codegen gen;
+        auto program = gen.generate_program(ast);
+        if (stage == Stage::Codegen) {
+            return;
+        }
+
+        ASM::emit_code(program, filename);
     }
 }
 
