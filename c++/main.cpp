@@ -5,7 +5,6 @@
 #include <vector>
 
 #define DOCTEST_CONFIG_IMPLEMENT
-/* #include "codegen.h" */
 #include "doctest.h"
 #include "emission.h"
 #include "lexer.h"

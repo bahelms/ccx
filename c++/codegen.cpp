@@ -48,8 +48,8 @@ TEST_CASE("generating a simple program") {
 
     CHECK(fn_def->name() == "main");
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "Mov(Imm(789), Register)");
-    CHECK(instrs[1]->to_string() == "Ret");
+    CHECK(instrs[0]->to_string() == "movl $789, %eax");
+    CHECK(instrs[1]->to_string() == "ret");
 }
 
 TEST_CASE("parsing a function definition without arguments") {
@@ -61,8 +61,8 @@ TEST_CASE("parsing a function definition without arguments") {
 
     CHECK(fn_def->name() == "main");
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "Mov(Imm(789), Register)");
-    CHECK(instrs[1]->to_string() == "Ret");
+    CHECK(instrs[0]->to_string() == "movl $789, %eax");
+    CHECK(instrs[1]->to_string() == "ret");
 }
 
 TEST_CASE("parsing a return statement produces mov and ret instructions") {
@@ -71,8 +71,8 @@ TEST_CASE("parsing a return statement produces mov and ret instructions") {
     auto stmt = std::make_unique<Return>(std::move(exp));
     auto instrs = gen.parse_instructions(std::move(stmt));
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "Mov(Imm(789), Register)");
-    CHECK(instrs[1]->to_string() == "Ret");
+    CHECK(instrs[0]->to_string() == "movl $789, %eax");
+    CHECK(instrs[1]->to_string() == "ret");
 }
 
 TEST_CASE("constants generate immediate values") {
