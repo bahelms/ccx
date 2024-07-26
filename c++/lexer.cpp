@@ -7,8 +7,8 @@
 #include "doctest.h"
 #include "lexer.h"
 
-const std::regex identifier("[a-zA-Z_]\\w*");
-const std::regex constant("[0-9]+");
+const std::regex identifier("^[a-zA-Z_]\\w*$");
+const std::regex constant("^[0-9]+$");
 const std::regex whitespace("\\s");
 
 const std::vector<Token> &Lexer::generate_tokens() {
