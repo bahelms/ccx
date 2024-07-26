@@ -25,6 +25,31 @@ impl fmt::Display for Statement {
     }
 }
 
+struct Function {
+    name: String,
+    body: Statement,
+}
+
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Function(\n  name=\"{}\",\n  body={}\n)",
+            self.name, self.body
+        )
+    }
+}
+
+pub struct Ast {
+    func: Function,
+}
+
+impl fmt::Display for Ast {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Program(\n  {}\n)", self.func)
+    }
+}
+
 pub struct Parser<'a> {
     tokens: &'a Vec<Token>,
     current_token: usize,
@@ -38,9 +63,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&self) {}
+    pub fn parse(&mut self) -> Ast {
+        let func = self.parse_function();
+        if self.current_token != self.tokens.len() {
+            panic!(
+                "Unexpected token found: {:?}",
+                self.tokens[self.current_token]
+            );
+        }
+        Ast { func }
+    }
 
-    pub fn parse_exp(&mut self) -> Exp {
+    fn parse_exp(&mut self) -> Exp {
         let token = &self.tokens[self.current_token];
         self.current_token += 1;
         match token {
@@ -54,6 +88,26 @@ impl<'a> Parser<'a> {
         let exp = self.parse_exp();
         self.expect(Token::Literal(";".to_string()));
         Statement::Return(exp)
+    }
+
+    fn parse_function(&mut self) -> Function {
+        self.expect(Token::Identifier("int".to_string()));
+        let token = &self.tokens[self.current_token];
+        self.current_token += 1;
+        let name = match token {
+            Token::Identifier(n) => n,
+            n => panic!("Invalid function name: {:?}", n),
+        };
+        self.expect(Token::Literal("(".to_string()));
+        self.expect(Token::Identifier("void".to_string()));
+        self.expect(Token::Literal(")".to_string()));
+        self.expect(Token::Literal("{".to_string()));
+        let stmt = self.parse_statement();
+        self.expect(Token::Literal("}".to_string()));
+        Function {
+            name: name.clone(),
+            body: stmt,
+        }
     }
 
     fn expect(&mut self, expected: Token) {
@@ -71,6 +125,107 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[should_panic]
+    fn parse_with_extra_tokens() {
+        let tokens = vec![
+            ident("int"),
+            ident("my_func"),
+            lit("("),
+            ident("void"),
+            lit(")"),
+            lit("{"),
+            ident("return"),
+            constant("420"),
+            lit(";"),
+            lit("}"),
+            ident("foo"),
+            ident("bar"),
+        ];
+        Parser::new(&tokens).parse();
+    }
+
+    #[test]
+    fn parse_successfully() {
+        let tokens = vec![
+            ident("int"),
+            ident("my_func"),
+            lit("("),
+            ident("void"),
+            lit(")"),
+            lit("{"),
+            ident("return"),
+            constant("420"),
+            lit(";"),
+            lit("}"),
+        ];
+        let mut parser = Parser::new(&tokens);
+        let ast = parser.parse();
+        assert_eq!(
+            ast.to_string(),
+            "Program(\n  Function(\n  name=\"my_func\",\n  body=Return(Constant(420))\n)\n)"
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_function_with_missing_token() {
+        let tokens = vec![
+            ident("int"),
+            ident("my_func"),
+            ident("void"),
+            lit(")"),
+            lit("{"),
+            ident("return"),
+            constant("420"),
+            lit(";"),
+            lit("}"),
+        ];
+        let mut parser = Parser::new(&tokens);
+        parser.parse_function();
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_function_with_invalid_name() {
+        let tokens = vec![
+            ident("int"),
+            constant("3"),
+            lit("("),
+            ident("void"),
+            lit(")"),
+            lit("{"),
+            ident("return"),
+            constant("420"),
+            lit(";"),
+            lit("}"),
+        ];
+        let mut parser = Parser::new(&tokens);
+        parser.parse_function();
+    }
+
+    #[test]
+    fn parse_function_success() {
+        let tokens = vec![
+            ident("int"),
+            ident("my_func"),
+            lit("("),
+            ident("void"),
+            lit(")"),
+            lit("{"),
+            ident("return"),
+            constant("420"),
+            lit(";"),
+            lit("}"),
+        ];
+        let mut parser = Parser::new(&tokens);
+        let stmt = parser.parse_function();
+        assert_eq!(
+            stmt.to_string(),
+            "Function(\n  name=\"my_func\",\n  body=Return(Constant(420))\n)"
+        );
+    }
 
     #[test]
     #[should_panic]

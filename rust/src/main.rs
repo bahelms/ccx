@@ -1,9 +1,12 @@
 mod lexer;
+mod parser;
 
 use lexer::Lexer;
+use parser::Parser;
 use std::{fs::File, io::BufReader};
 
 const LEX: i32 = 0;
+const PARSE: i32 = 1;
 
 fn main() {
     let filename = std::env::args().nth(1).expect("Error: No filename given");
@@ -21,5 +24,11 @@ fn main() {
         for token in tokens {
             println!("{:?}", token);
         }
+        return;
+    }
+
+    let mut parser = Parser::new(tokens);
+    if stage == PARSE {
+        println!("{}", parser.parse());
     }
 }
