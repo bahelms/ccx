@@ -1,31 +1,11 @@
 use regex::Regex;
 use std::{io::BufReader, io::Read};
 
-struct Patterns {
-    whitespace: Regex,
-    identifier: Regex,
-    constant: Regex,
-}
-
-impl Patterns {
-    fn new() -> Self {
-        Self {
-            identifier: Regex::new(r"^[a-zA-Z_]\w*$").unwrap(),
-            constant: Regex::new(r"^[0-9]+$").unwrap(),
-            whitespace: Regex::new(r"\s").unwrap(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Token {
-    value: String,
-}
-
-impl Token {
-    fn new(value: String) -> Self {
-        Self { value }
-    }
+#[derive(Debug, PartialEq)]
+pub enum Token {
+    Constant(String),
+    Identifier(String),
+    Literal(String), // Punctuation - can make these their own tokens (OpenBrace, etc)
 }
 
 pub struct Lexer<T> {
@@ -55,10 +35,10 @@ impl<T: Read> Lexer<T> {
             match ch {
                 ';' | '(' | ')' => {
                     self.flush_char_buffer();
-                    self.tokens.push(Token::new(ch.to_string()));
+                    self.tokens.push(Token::Literal(ch.to_string()));
                 }
                 '{' | '}' => {
-                    self.tokens.push(Token::new(ch.to_string()));
+                    self.tokens.push(Token::Literal(ch.to_string()));
                 }
                 _ => {
                     let ch_str = ch.to_string();
@@ -76,13 +56,30 @@ impl<T: Read> Lexer<T> {
     fn flush_char_buffer(&mut self) {
         if !self.char_buffer.is_empty() {
             if self.patterns.constant.is_match(&self.char_buffer) {
-                self.tokens.push(Token::new(self.char_buffer.clone()));
+                self.tokens.push(Token::Constant(self.char_buffer.clone()));
             } else if self.patterns.identifier.is_match(&self.char_buffer) {
-                self.tokens.push(Token::new(self.char_buffer.clone()));
+                self.tokens
+                    .push(Token::Identifier(self.char_buffer.clone()));
             } else {
                 panic!("Identifiers can't begin with a digit: {}", self.char_buffer);
             }
             self.char_buffer.clear();
+        }
+    }
+}
+
+struct Patterns {
+    whitespace: Regex,
+    identifier: Regex,
+    constant: Regex,
+}
+
+impl Patterns {
+    fn new() -> Self {
+        Self {
+            identifier: Regex::new(r"^[a-zA-Z_]\w*$").unwrap(),
+            constant: Regex::new(r"^[0-9]+$").unwrap(),
+            whitespace: Regex::new(r"\s").unwrap(),
         }
     }
 }
@@ -102,16 +99,16 @@ mod tests {
     fn identifiers_can_have_digits() {
         let mut lexer = Lexer::new(init_reader("i2x6("));
         let tokens = lexer.generate_tokens();
-        assert_eq!(tokens[0].value, "i2x6");
-        assert_eq!(tokens[1].value, "(");
+        assert_eq!(tokens[0], Token::Identifier("i2x6".to_string()));
+        assert_eq!(tokens[1], Token::Literal("(".to_string()));
     }
 
     #[test]
     fn constant_token() {
         let mut lexer = Lexer::new(init_reader("2246;"));
         let tokens = lexer.generate_tokens();
-        assert_eq!(tokens[0].value, "2246");
-        assert_eq!(tokens[1].value, ";");
+        assert_eq!(tokens[0], Token::Constant("2246".to_string()));
+        assert_eq!(tokens[1], Token::Literal(";".to_string()));
     }
 
     #[test]
@@ -119,7 +116,7 @@ mod tests {
         let mut lexer = Lexer::new(init_reader(" \n\t ;  "));
         let tokens = lexer.generate_tokens();
         assert_eq!(tokens.len(), 1);
-        assert_eq!(tokens[0].value, ";");
+        assert_eq!(tokens[0], Token::Literal(";".to_string()));
     }
 
     #[test]
