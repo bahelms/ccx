@@ -13,7 +13,7 @@ impl fmt::Display for Exp {
     }
 }
 
-enum Statement {
+pub enum Statement {
     Return(Exp),
 }
 
@@ -25,9 +25,9 @@ impl fmt::Display for Statement {
     }
 }
 
-struct Function {
-    name: String,
-    body: Statement,
+pub struct Function {
+    pub name: String,
+    pub body: Statement,
 }
 
 impl fmt::Display for Function {
