@@ -8,6 +8,7 @@ use std::{fs::File, io::BufReader};
 
 const LEX: i32 = 0;
 const PARSE: i32 = 1;
+const CODEGEN: i32 = 2;
 
 fn main() {
     let filename = std::env::args().nth(1).expect("Error: No filename given");
@@ -29,7 +30,16 @@ fn main() {
     }
 
     let mut parser = Parser::new(tokens);
+    let ast = parser.parse();
     if stage == PARSE {
-        println!("{}", parser.parse());
+        println!("{}", ast);
+        return;
     }
+
+    let asm = codegen::assembly::generate_assembly(ast);
+    // if stage == CODEGEN {
+    //     return;
+    // }
+
+    // codegen::emission::emit
 }

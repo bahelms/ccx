@@ -1,7 +1,9 @@
 use crate::parser::{Ast, Exp, Function, Statement};
 use core::fmt;
 
-struct Asm {}
+pub struct Asm {
+    func_def: FunctionDef,
+}
 
 #[derive(Debug, PartialEq)]
 enum Operand {
@@ -33,8 +35,22 @@ impl fmt::Display for Instruction {
     }
 }
 
+struct FunctionDef {
+    name: String,
+    instructions: Vec<Instruction>,
+}
+
 pub fn generate_assembly(ast: Ast) -> Asm {
-    todo!();
+    Asm {
+        func_def: parse_func_def(ast.func),
+    }
+}
+
+fn parse_func_def(func: Function) -> FunctionDef {
+    FunctionDef {
+        name: func.name,
+        instructions: parse_instructions(func.body),
+    }
 }
 
 fn parse_instructions(stmt: Statement) -> Vec<Instruction> {
@@ -59,11 +75,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn generating_a_simple_program() {
+        let ast = Ast {
+            func: Function {
+                name: "main".to_string(),
+                body: Statement::Return(Exp::Constant("789".to_string())),
+            },
+        };
+        let asm = generate_assembly(ast);
+        assert_eq!(asm.func_def.name, "main");
+        assert_eq!(asm.func_def.instructions.len(), 2);
+        assert_eq!(asm.func_def.instructions[0].to_string(), "movl $789, %eax");
+        assert_eq!(asm.func_def.instructions[1].to_string(), "ret");
+    }
+
+    #[test]
     fn parsing_function_def_without_arguments() {
-        let func = Function {
+        let fn_def = parse_func_def(Function {
             name: "main".to_string(),
             body: Statement::Return(Exp::Constant("789".to_string())),
-        };
+        });
+        assert_eq!(fn_def.name, "main");
+        assert_eq!(fn_def.instructions.len(), 2);
+        assert_eq!(fn_def.instructions[0].to_string(), "movl $789, %eax");
+        assert_eq!(fn_def.instructions[1].to_string(), "ret");
     }
 
     #[test]

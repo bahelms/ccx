@@ -41,7 +41,7 @@ impl fmt::Display for Function {
 }
 
 pub struct Ast {
-    func: Function,
+    pub func: Function,
 }
 
 impl fmt::Display for Ast {
