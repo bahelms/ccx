@@ -17,7 +17,7 @@ fn main() {
         .expect("Error: No stage given")
         .parse()
         .expect("Error: Stage must be an integer");
-    let file = File::open(filename).expect("File not found");
+    let file = File::open(&filename).expect("File not found");
     let reader = BufReader::new(file);
 
     let mut lexer = Lexer::new(reader);
@@ -36,10 +36,10 @@ fn main() {
         return;
     }
 
-    let asm = codegen::assembly::generate_assembly(ast);
-    // if stage == CODEGEN {
-    //     return;
-    // }
+    let asm = codegen::generate_assembly(ast);
+    if stage == CODEGEN {
+        return;
+    }
 
-    // codegen::emission::emit
+    codegen::emit_code(asm, filename);
 }

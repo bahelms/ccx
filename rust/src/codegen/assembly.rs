@@ -2,7 +2,7 @@ use crate::parser::{Ast, Exp, Function, Statement};
 use core::fmt;
 
 pub struct Asm {
-    func_def: FunctionDef,
+    pub func_def: FunctionDef,
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,9 +35,9 @@ impl fmt::Display for Instruction {
     }
 }
 
-struct FunctionDef {
-    name: String,
-    instructions: Vec<Instruction>,
+pub struct FunctionDef {
+    pub name: String,
+    pub instructions: Vec<Instruction>,
 }
 
 pub fn generate_assembly(ast: Ast) -> Asm {
