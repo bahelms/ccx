@@ -6,7 +6,7 @@ pub struct Asm {
 }
 
 #[derive(Debug, PartialEq)]
-enum Operand {
+pub enum Operand {
     Imm(String),
     Register,
 }
@@ -21,7 +21,7 @@ impl fmt::Display for Operand {
 }
 
 #[derive(Debug, PartialEq)]
-enum Instruction {
+pub enum Instruction {
     Mov(Operand, Operand),
     Ret,
 }
