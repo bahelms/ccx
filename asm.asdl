@@ -5,5 +5,5 @@ function_definition = FunctionDef(identifier name, instruction* instruction)
 instruction = Mov(operand src, operand dst) | Ret
 operand = Imm(int) | Register
 
-// * = field is a list
-// Imm = immediate value (constant)
+-- * = field is a list
+-- Imm = immediate value (constant)

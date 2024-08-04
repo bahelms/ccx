@@ -1,6 +1,6 @@
 .PHONY: test
 
-compiler: main.cpp lexer.cpp parser.cpp codegen.cpp emission.cpp
+compiler: src/*.cpp src/codegen/*.cpp
 	mkdir -p ../bin
 	clang++ -Wall -std=c++2a -o ../bin/compiler $^
 

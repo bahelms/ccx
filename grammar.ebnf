@@ -3,4 +3,4 @@
 <statement> ::= "return" <exp> ";"
 <exp> ::= <int>
 <identifier> ::= ? An identifier token ?
-<int> ::= ? An constant token ?
+<int> ::= ? A constant token ?
