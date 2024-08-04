@@ -4,9 +4,9 @@ use std::io::Write;
 
 pub fn emit_code(assembly: Asm, filename: String) {
     let mut file = File::create(asm_filename(filename)).expect("Asm source file failed to open");
-    file.write(format_func_def(assembly.func_def).as_bytes())
+    file.write_all(format_func_def(assembly.func_def).as_bytes())
         .expect("Write to asm source failed");
-    file.write(b"\t.section .note.GNU-stack,\"\",@progbits\n")
+    file.write_all(b"\t.section .note.GNU-stack,\"\",@progbits\n")
         .expect("Write to asm source failed");
 }
 

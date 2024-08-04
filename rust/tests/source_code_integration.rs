@@ -14,7 +14,6 @@ fn compile_simple_program() {
     let contents = std::fs::read_to_string("integration_test_output.s").expect("File not found");
     assert_eq!(contents, expected_output);
 
-
-    std::fs::remove_file("integration_test_output.s");
-
+    std::fs::remove_file("integration_test_output.s")
+        .expect("Test source file failed to be deleted");
 }
