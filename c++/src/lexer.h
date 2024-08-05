@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-enum class TokenType { Punct, Constant, Identifier };
+enum class TokenType { Literal, Constant, Identifier, Decrement };
 
 class Token {
   public:
