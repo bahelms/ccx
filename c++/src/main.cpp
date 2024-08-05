@@ -5,8 +5,8 @@
 #include <vector>
 
 #define DOCTEST_CONFIG_IMPLEMENT
-#include "doctest.h"
-#include "emission.h"
+#include "../doctest.h"
+#include "codegen/emission.h"
 #include "lexer.h"
 #include "parser.h"
 
@@ -31,13 +31,12 @@ void compile(Stage stage, std::string filename) {
             return;
         }
 
-        ASM::Codegen gen;
-        auto program = gen.generate_program(ast);
+        auto assembly = ASM::generate_assembly(ast);
         if (stage == Stage::Codegen) {
             return;
         }
 
-        ASM::emit_code(program, filename);
+        ASM::emit_code(assembly, filename);
     }
 }
 

@@ -1,5 +1,5 @@
-#include "lexer.h"
-#include "parser.h"
+#include "../lexer.h"
+#include "../parser.h"
 #include <array>
 #include <memory>
 
@@ -71,18 +71,5 @@ class Program {
     std::unique_ptr<FunctionDef> fn_def() { return std::move(_fn_def); }
 };
 
-class Codegen {
-    AST _ast{}; // not used
-
-  public:
-    Codegen() = default;
-
-    Program generate_program(AST &);
-
-    std::unique_ptr<Operand> parse_operand(std::unique_ptr<Exp>);
-    std::vector<std::unique_ptr<Instruction>>
-        parse_instructions(std::unique_ptr<Statement>);
-
-    std::unique_ptr<FunctionDef> parse_func_def(std::unique_ptr<Function>);
-};
+Program generate_assembly(AST &);
 } // namespace ASM
