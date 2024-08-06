@@ -23,6 +23,29 @@ class Constant : public Exp {
     }
 };
 
+class UnaryOperator {
+  public:
+    virtual ~UnaryOperator() = default;
+    virtual std::string const to_string() = 0;
+};
+
+class Complement : public UnaryOperator {
+    std::string const to_string() override { return "~"; }
+};
+
+class Negate : public UnaryOperator {
+    std::string const to_string() override { return "~"; }
+};
+
+class Unary : public Exp {
+    std::unique_ptr<UnaryOperator> _op;
+    std::unique_ptr<Exp> _exp;
+
+  public:
+    Unary(std::unique_ptr<UnaryOperator> op, std::unique_ptr<Exp> exp)
+        : _op(std::move(op)), _exp(std::move(exp)) {}
+};
+
 class Statement {
   public:
     virtual ~Statement() = default;
@@ -86,4 +109,5 @@ class Parser {
     std::unique_ptr<Exp> parse_exp();
     std::unique_ptr<Statement> parse_statement();
     std::unique_ptr<Function> parse_function();
+    std::unique_ptr<UnaryOperator> parse_unop();
 };

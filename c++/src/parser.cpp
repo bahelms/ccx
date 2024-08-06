@@ -52,14 +52,35 @@ std::unique_ptr<Statement> Parser::parse_statement() {
 }
 
 std::unique_ptr<Exp> Parser::parse_exp() {
-    const Token &token = _tokens[_current_token++];
-    if (token.type() != TokenType::Constant) {
-        throw SyntaxError(std::format("Not a constant: {}", token.value()));
+    /* const Token &token = _tokens[_current_token++]; */
+    /* if (token.type() != TokenType::Constant) { */
+    /*     throw SyntaxError(std::format("Invalid expression: {}",
+     * token.value())); */
+    /* } */
+    /* return std::make_unique<Constant>(token.value()); */
+
+    const Token &token = _tokens[_current_token];
+    if (token.type() == TokenType::Constant) {
+        _current_token++;
+        return std::make_unique<Constant>(token.value());
+    } else if (token.value() == "~") {
+        auto op = parse_unop();
+        auto inner_exp = parse_exp();
+        return std::make_unique<Unary>(std::move(op), std::move(inner_exp));
+    } else {
+        throw SyntaxError(std::format("Invalid expression: {}", token.value()));
     }
-    return std::make_unique<Constant>(token.value());
 }
 
+std::unique_ptr<UnaryOperator> Parser::parse_unop() {}
+
 //// TESTS ////
+
+TEST_CASE("Parser::parse_exp for bitwise complement") {
+    Parser parser(std::vector<Token>({{"~"}, {"100", TokenType::Constant}}));
+    auto exp = parser.parse_exp();
+    CHECK(exp->to_string() == "Complement(Constant(100))");
+}
 
 TEST_CASE("Parser::parse with extra tokens") {
     std::vector<Token> tokens{
@@ -146,13 +167,13 @@ TEST_CASE("Parser::parse_statement error") {
 
     tokens = {{"return"}, {";"}};
     Parser parser3(tokens);
-    REQUIRE_THROWS_WITH_AS(parser3.parse_statement(), "Not a constant: ;",
+    REQUIRE_THROWS_WITH_AS(parser3.parse_statement(), "Invalid expression: ;",
                            SyntaxError);
 }
 
 TEST_CASE("Parser::parse_exp error") {
     Parser parser(std::vector<Token>({{"bark", TokenType::Identifier}}));
-    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Not a constant: bark",
+    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Invalid expression: bark",
                            SyntaxError);
 }
 
