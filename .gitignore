@@ -1,4 +1,6 @@
 bin/
 *.out
+*.o
+*.i
 test/sources/*.s
 target

@@ -18,12 +18,12 @@ const std::vector<Token> &Lexer::generate_tokens() {
 
         if (std::regex_match(str_ch, whitespace)) {
             flush_char_buffer();
-        } else if (ch == '(' || ch == ')' || ch == ';') {
+        } else if (ch == '(' || ch == ')' || ch == ';' || ch == '~' ||
+                   ch == '{' || ch == '}') {
             flush_char_buffer();
             _tokens.emplace_back(Token(std::string(1, ch)));
-        } else if (ch == '{' || ch == '}' || ch == '~') {
-            _tokens.emplace_back(Token(std::string(1, ch)));
         } else if (ch == '-') {
+            flush_char_buffer();
             if (_stream.peek() == '-') {
                 _stream.get(ch);
                 _tokens.emplace_back("--", TokenType::Decrement);
@@ -49,6 +49,15 @@ void Lexer::flush_char_buffer() {
         }
         _char_buffer.clear();
     }
+}
+
+TEST_CASE("out of order unarys") {
+    std::stringstream source("2-");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens.size() == 2);
+    CHECK(tokens[0].value() == "2");
+    CHECK(tokens[1].value() == "-");
 }
 
 TEST_CASE("unarys with parens") {
