@@ -46,6 +46,9 @@ class Unary : public Exp {
     Unary(std::unique_ptr<UnaryOperator> op, std::unique_ptr<Exp> exp)
         : _op(std::move(op)), _exp(std::move(exp)) {}
 
+    std::unique_ptr<UnaryOperator> op() { return std::move(_op); };
+    std::unique_ptr<Exp> exp() { return std::move(_exp); };
+
     std::string const to_string() override {
         return std::format("{}({})", _op->to_string(), _exp->to_string());
     }
