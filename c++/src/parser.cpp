@@ -5,6 +5,7 @@
 #include "lexer.h"
 #include "parser.h"
 
+namespace Ast {
 AST Parser::parse() {
     auto fn = parse_function();
     if (_current_token != _tokens.size()) {
@@ -245,3 +246,4 @@ TEST_CASE("statements have string representations") {
     Return stmt(std::make_unique<Constant>("23"));
     CHECK(stmt.to_string() == "Return(Constant(23))");
 }
+} // namespace Ast

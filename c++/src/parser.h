@@ -5,6 +5,7 @@
 
 #include "lexer.h"
 
+namespace Ast {
 class Exp {
   public:
     virtual ~Exp() = default;
@@ -116,3 +117,4 @@ class Parser {
     std::unique_ptr<Function> parse_function();
     std::unique_ptr<UnaryOperator> parse_unop();
 };
+} // namespace Ast

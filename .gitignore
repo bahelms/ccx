@@ -2,5 +2,6 @@ bin/
 *.out
 *.o
 *.i
+*.d
 test/sources/*.s
 target
