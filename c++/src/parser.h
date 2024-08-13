@@ -67,7 +67,7 @@ class Return : public Statement {
     Return(auto e) : _exp(std::move(e)) {}
 
     auto exp() { return std::move(_exp); }
-    std::string const to_string() {
+    std::string const to_string() override {
         return std::format("Return({})", _exp->to_string());
     }
 };
