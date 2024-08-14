@@ -97,7 +97,7 @@ class AST {
     AST() = default;
     AST(auto fn) : _fn(std::move(fn)) {}
 
-    std::unique_ptr<Function> fn() { return std::move(_fn); }
+    std::unique_ptr<Function> &fn() { return _fn; }
 
     std::string to_string() {
         return std::format("Program(\n  {}\n)", _fn->to_string(2));

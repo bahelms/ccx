@@ -24,7 +24,8 @@ parse_instructions(std::unique_ptr<Ast::Statement> stmt) {
 
     return instrs;
 }
-std::unique_ptr<FunctionDef> parse_func_def(std::unique_ptr<Ast::Function> fn) {
+std::unique_ptr<FunctionDef>
+parse_func_def(std::unique_ptr<Ast::Function> &fn) {
     auto instrs = parse_instructions(fn->body());
     return std::make_unique<FunctionDef>(fn->name(), std::move(instrs));
 }
@@ -57,7 +58,7 @@ TEST_CASE("parsing a function definition without arguments") {
     auto stmt =
         std::make_unique<Ast::Return>(std::make_unique<Ast::Constant>("789"));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
-    auto fn_def = ASM::parse_func_def(std::move(fn));
+    auto fn_def = ASM::parse_func_def(fn);
     auto &instrs = fn_def->instructions();
 
     CHECK(fn_def->name() == "main");
