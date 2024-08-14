@@ -7,6 +7,17 @@
 #include "tacky.h"
 
 namespace Tacky {
+std::unique_ptr<Program>
+TackyGenerator::convert_ast(std::unique_ptr<Ast::AST> ast) {
+    return std::make_unique<Program>(convert_function(ast->fn()));
+}
+
+std::unique_ptr<Function>
+TackyGenerator::convert_function(std::unique_ptr<Ast::Function> &fn) {
+    convert_statement(fn->body());
+    return std::make_unique<Function>(fn->name(), std::move(_instrs));
+}
+
 void TackyGenerator::convert_statement(std::unique_ptr<Ast::Statement> stmt) {
     auto return_stmt = dynamic_cast<Ast::Return *>(stmt.release());
     auto val = convert_exp(return_stmt->exp());
@@ -40,6 +51,36 @@ TackyGenerator::convert_unop(std::unique_ptr<Ast::UnaryOperator> op) {
 } // namespace Tacky
 
 //// TESTS ////
+
+TEST_CASE("convert_ast") {
+    auto unary =
+        std::make_unique<Ast::Unary>(std::make_unique<Ast::Complement>(),
+                                     std::make_unique<Ast::Constant>("123"));
+    auto stmt = std::make_unique<Ast::Return>(std::move(unary));
+    auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
+    auto program = std::make_unique<Ast::AST>(std::move(fn));
+    Tacky::TackyGenerator gen;
+    auto tacky_ir = gen.convert_ast(std::move(program));
+
+    CHECK(tacky_ir->fn()->body().size() == 2);
+    CHECK(dynamic_cast<Tacky::Unary *>(tacky_ir->fn()->body()[0].release()));
+    CHECK(dynamic_cast<Tacky::Return *>(tacky_ir->fn()->body()[1].release()));
+}
+
+TEST_CASE("convert_function with one statement") {
+    auto unary =
+        std::make_unique<Ast::Unary>(std::make_unique<Ast::Complement>(),
+                                     std::make_unique<Ast::Constant>("123"));
+    auto stmt = std::make_unique<Ast::Return>(std::move(unary));
+    auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
+    Tacky::TackyGenerator gen;
+    auto tacky_fn = gen.convert_function(fn);
+
+    CHECK(tacky_fn->body().size() == 2);
+    CHECK(tacky_fn->body()[0]->to_string() ==
+          "Unary(Complement, Constant(123), Var(main.0))");
+    CHECK(tacky_fn->body()[1]->to_string() == "Return(Var(main.0))");
+}
 
 TEST_CASE("convert_statement for returning a nested unary complement") {
     // Return(Unary(Negate,

@@ -87,12 +87,21 @@ class Unary : public Instruction {
 };
 
 class Function {
-    std::string _identifier{};
-    std::vector<Instruction> _body{};
+    std::string _name{};
+    std::vector<std::unique_ptr<Instruction>> _body{};
+
+  public:
+    Function(std::string name, std::vector<std::unique_ptr<Instruction>> instrs)
+        : _name(name), _body(std::move(instrs)) {}
+    std::vector<std::unique_ptr<Instruction>> &body() { return _body; }
 };
 
 class Program {
     std::unique_ptr<Function> _fn{};
+
+  public:
+    Program(std::unique_ptr<Function> fn) : _fn(std::move(fn)) {}
+    std::unique_ptr<Function> &fn() { return _fn; }
 };
 
 class TackyGenerator {
@@ -109,9 +118,12 @@ class TackyGenerator {
   public:
     std::vector<std::unique_ptr<Instruction>> &instructions() {
         return _instrs;
-    };
+    }
 
-    void convert_statement(std::unique_ptr<Ast::Statement> stmt);
-    std::unique_ptr<Val> convert_exp(std::unique_ptr<Ast::Exp> exp);
+    std::unique_ptr<Program> convert_ast(std::unique_ptr<Ast::AST>);
+    std::unique_ptr<Function>
+    convert_function(std::unique_ptr<Ast::Function> &);
+    void convert_statement(std::unique_ptr<Ast::Statement>);
+    std::unique_ptr<Val> convert_exp(std::unique_ptr<Ast::Exp>);
 };
 } // namespace Tacky
