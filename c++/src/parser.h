@@ -90,12 +90,12 @@ class Function {
     std::string name() { return _name; }
 };
 
-class AST {
+class Program {
     std::unique_ptr<Function> _fn;
 
   public:
-    AST() = default;
-    AST(auto fn) : _fn(std::move(fn)) {}
+    Program() = default;
+    Program(auto fn) : _fn(std::move(fn)) {}
 
     std::unique_ptr<Function> &fn() { return _fn; }
 
@@ -114,7 +114,7 @@ class Parser {
   public:
     Parser(auto t) : _tokens(t) {}
 
-    AST parse();
+    Program parse();
     std::unique_ptr<Exp> parse_exp();
     std::unique_ptr<Statement> parse_statement();
     std::unique_ptr<Function> parse_function();

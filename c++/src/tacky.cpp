@@ -7,7 +7,7 @@
 #include "tacky.h"
 
 namespace Tacky {
-std::unique_ptr<Program> Generator::convert_ast(Ast::AST &ast) {
+std::unique_ptr<Program> Generator::convert_ast(Ast::Program &ast) {
     return std::make_unique<Program>(convert_function(ast.fn()));
 }
 
@@ -56,7 +56,7 @@ TEST_CASE("convert_ast") {
                                      std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
-    auto program = Ast::AST(std::move(fn));
+    auto program = Ast::Program(std::move(fn));
     Tacky::Generator gen;
     auto tacky_ir = gen.convert_ast(program);
 

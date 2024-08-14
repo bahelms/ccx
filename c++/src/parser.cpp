@@ -6,14 +6,14 @@
 #include "parser.h"
 
 namespace Ast {
-AST Parser::parse() {
+Program Parser::parse() {
     auto fn = parse_function();
     if (_current_token != _tokens.size()) {
         throw SyntaxError(std::format("Unexpected token found: {}",
                                       _tokens[_current_token].value()));
     }
 
-    AST ast(std::move(fn));
+    Program ast(std::move(fn));
     return ast;
 }
 

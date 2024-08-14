@@ -30,7 +30,7 @@ parse_func_def(std::unique_ptr<Ast::Function> &fn) {
     return std::make_unique<FunctionDef>(fn->name(), std::move(instrs));
 }
 
-Program generate_assembly(Ast::AST &ast) {
+Program generate_assembly(Ast::Program &ast) {
     Program program(parse_func_def(ast.fn()));
     return program;
 }
@@ -42,7 +42,7 @@ TEST_CASE("generating a simple program") {
     auto stmt =
         std::make_unique<Ast::Return>(std::make_unique<Ast::Constant>("789"));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
-    Ast::AST ast(std::move(fn));
+    Ast::Program ast(std::move(fn));
 
     ASM::Program program = ASM::generate_assembly(ast);
     auto fn_def = program.fn_def();

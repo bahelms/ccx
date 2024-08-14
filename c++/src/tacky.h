@@ -120,7 +120,7 @@ class Generator {
         return _instrs;
     }
 
-    std::unique_ptr<Program> convert_ast(Ast::AST &);
+    std::unique_ptr<Program> convert_ast(Ast::Program &);
     std::unique_ptr<Function>
     convert_function(std::unique_ptr<Ast::Function> &);
     void convert_statement(std::unique_ptr<Ast::Statement>);

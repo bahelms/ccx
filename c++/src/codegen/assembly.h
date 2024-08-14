@@ -71,5 +71,5 @@ class Program {
     std::unique_ptr<FunctionDef> fn_def() { return std::move(_fn_def); }
 };
 
-Program generate_assembly(Ast::AST &);
+Program generate_assembly(Ast::Program &);
 } // namespace ASM
