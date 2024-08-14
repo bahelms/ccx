@@ -3,7 +3,7 @@
 #include <array>
 #include <memory>
 
-namespace ASM {
+namespace Asm {
 class Operand {
   public:
     virtual ~Operand() = default;
@@ -72,4 +72,4 @@ class Program {
 };
 
 Program generate_assembly(Ast::Program &);
-} // namespace ASM
+} // namespace Asm

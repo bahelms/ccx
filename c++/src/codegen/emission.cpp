@@ -5,7 +5,7 @@
 
 #include "emission.h"
 
-namespace ASM {
+namespace Asm {
 std::string asm_filename(std::string filename) {
     return filename.substr(0, filename.find_last_of(".")) + ".s";
 }
@@ -35,4 +35,4 @@ void emit_code(Program &program, std::string source_filename) {
         file << "\t.section .note.GNU-stack,\"\",@progbits\n";
     }
 };
-} // namespace ASM
+} // namespace Asm

@@ -3,7 +3,7 @@
 #include <array>
 #include <memory>
 
-namespace ASM {
+namespace Asm {
 std::unique_ptr<Operand> parse_operand(std::unique_ptr<Ast::Exp> exp) {
     // cast to int here?
     std::unique_ptr<Ast::Constant> c(
@@ -34,7 +34,7 @@ Program generate_assembly(Ast::Program &ast) {
     Program program(parse_func_def(ast.fn()));
     return program;
 }
-} // namespace ASM
+} // namespace Asm
 
 //// TESTS ////
 
@@ -44,7 +44,7 @@ TEST_CASE("generating a simple program") {
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
     Ast::Program ast(std::move(fn));
 
-    ASM::Program program = ASM::generate_assembly(ast);
+    Asm::Program program = Asm::generate_assembly(ast);
     auto fn_def = program.fn_def();
     auto &instrs = fn_def->instructions();
 
@@ -58,7 +58,7 @@ TEST_CASE("parsing a function definition without arguments") {
     auto stmt =
         std::make_unique<Ast::Return>(std::make_unique<Ast::Constant>("789"));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
-    auto fn_def = ASM::parse_func_def(fn);
+    auto fn_def = Asm::parse_func_def(fn);
     auto &instrs = fn_def->instructions();
 
     CHECK(fn_def->name() == "main");
@@ -70,14 +70,14 @@ TEST_CASE("parsing a function definition without arguments") {
 TEST_CASE("parsing a return statement produces mov and ret instructions") {
     auto exp = std::make_unique<Ast::Constant>("789");
     auto stmt = std::make_unique<Ast::Return>(std::move(exp));
-    auto instrs = ASM::parse_instructions(std::move(stmt));
+    auto instrs = Asm::parse_instructions(std::move(stmt));
     CHECK(instrs.size() == 2);
     CHECK(instrs[0]->to_string() == "movl $789, %eax");
     CHECK(instrs[1]->to_string() == "ret");
 }
 
 TEST_CASE("constants generate immediate values") {
-    auto operand = ASM::parse_operand(std::make_unique<Ast::Constant>("42"));
-    std::unique_ptr<ASM::Imm> imm(dynamic_cast<ASM::Imm *>(operand.release()));
+    auto operand = Asm::parse_operand(std::make_unique<Ast::Constant>("42"));
+    std::unique_ptr<Asm::Imm> imm(dynamic_cast<Asm::Imm *>(operand.release()));
     CHECK(imm->value() == "42");
 }

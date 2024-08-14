@@ -39,12 +39,12 @@ void compile(Stage stage, std::string filename) {
             return;
         }
 
-        auto assembly = ASM::generate_assembly(ast);
+        auto assembly = Asm::generate_assembly(ast);
         if (stage == Stage::Codegen) {
             return;
         }
 
-        ASM::emit_code(assembly, filename);
+        Asm::emit_code(assembly, filename);
     }
 }
 
