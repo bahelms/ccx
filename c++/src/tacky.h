@@ -104,7 +104,7 @@ class Program {
     std::unique_ptr<Function> &fn() { return _fn; }
 };
 
-class TackyGenerator {
+class Generator {
     int _temp_var_counter{};
     std::vector<std::unique_ptr<Instruction>> _instrs{};
 
@@ -120,7 +120,7 @@ class TackyGenerator {
         return _instrs;
     }
 
-    std::unique_ptr<Program> convert_ast(std::unique_ptr<Ast::AST>);
+    std::unique_ptr<Program> convert_ast(Ast::AST &);
     std::unique_ptr<Function>
     convert_function(std::unique_ptr<Ast::Function> &);
     void convert_statement(std::unique_ptr<Ast::Statement>);

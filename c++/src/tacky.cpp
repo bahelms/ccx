@@ -7,25 +7,23 @@
 #include "tacky.h"
 
 namespace Tacky {
-std::unique_ptr<Program>
-TackyGenerator::convert_ast(std::unique_ptr<Ast::AST> ast) {
-    return std::make_unique<Program>(convert_function(ast->fn()));
+std::unique_ptr<Program> Generator::convert_ast(Ast::AST &ast) {
+    return std::make_unique<Program>(convert_function(ast.fn()));
 }
 
 std::unique_ptr<Function>
-TackyGenerator::convert_function(std::unique_ptr<Ast::Function> &fn) {
+Generator::convert_function(std::unique_ptr<Ast::Function> &fn) {
     convert_statement(fn->body());
     return std::make_unique<Function>(fn->name(), std::move(_instrs));
 }
 
-void TackyGenerator::convert_statement(std::unique_ptr<Ast::Statement> stmt) {
+void Generator::convert_statement(std::unique_ptr<Ast::Statement> stmt) {
     auto return_stmt = dynamic_cast<Ast::Return *>(stmt.release());
     auto val = convert_exp(return_stmt->exp());
     _instrs.emplace_back(std::make_unique<Return>(std::move(val)));
 }
 
-std::unique_ptr<Val>
-TackyGenerator::convert_exp(std::unique_ptr<Ast::Exp> exp) {
+std::unique_ptr<Val> Generator::convert_exp(std::unique_ptr<Ast::Exp> exp) {
     if (auto *constant = dynamic_cast<Ast::Constant *>(exp.get())) {
         return std::make_unique<Constant>(constant->value());
     } else {
@@ -41,7 +39,7 @@ TackyGenerator::convert_exp(std::unique_ptr<Ast::Exp> exp) {
 }
 
 std::unique_ptr<UnaryOperator>
-TackyGenerator::convert_unop(std::unique_ptr<Ast::UnaryOperator> op) {
+Generator::convert_unop(std::unique_ptr<Ast::UnaryOperator> op) {
     if (auto *comp = dynamic_cast<Ast::Complement *>(op.get())) {
         return std::make_unique<Complement>();
     } else {
@@ -58,9 +56,9 @@ TEST_CASE("convert_ast") {
                                      std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
-    auto program = std::make_unique<Ast::AST>(std::move(fn));
-    Tacky::TackyGenerator gen;
-    auto tacky_ir = gen.convert_ast(std::move(program));
+    auto program = Ast::AST(std::move(fn));
+    Tacky::Generator gen;
+    auto tacky_ir = gen.convert_ast(program);
 
     CHECK(tacky_ir->fn()->body().size() == 2);
     CHECK(dynamic_cast<Tacky::Unary *>(tacky_ir->fn()->body()[0].release()));
@@ -73,7 +71,7 @@ TEST_CASE("convert_function with one statement") {
                                      std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
     auto tacky_fn = gen.convert_function(fn);
 
     CHECK(tacky_fn->body().size() == 2);
@@ -93,7 +91,7 @@ TEST_CASE("convert_statement for returning a nested unary complement") {
     auto unary3 = std::make_unique<Ast::Unary>(std::make_unique<Ast::Negate>(),
                                                std::move(unary2));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary3));
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
     gen.convert_statement(std::move(stmt));
 
     CHECK(gen.instructions().size() == 4);
@@ -112,7 +110,7 @@ TEST_CASE("convert_statement for returning a single unary complement") {
         std::make_unique<Ast::Unary>(std::make_unique<Ast::Complement>(),
                                      std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
     gen.convert_statement(std::move(stmt));
 
     CHECK(gen.instructions().size() == 2);
@@ -125,7 +123,7 @@ TEST_CASE("convert_statement for returning a constant") {
     // Return(Constant(88))
     auto exp = std::make_unique<Ast::Constant>("88");
     auto stmt = std::make_unique<Ast::Return>(std::move(exp));
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
     gen.convert_statement(std::move(stmt));
     CHECK(gen.instructions().size() == 1);
     CHECK(gen.instructions()[0]->to_string() == "Return(Constant(88))");
@@ -135,7 +133,7 @@ TEST_CASE("convert_exp for a unary negate exp") {
     auto op = std::make_unique<Ast::Negate>();
     auto exp = std::make_unique<Ast::Constant>("420");
     auto unary = std::make_unique<Ast::Unary>(std::move(op), std::move(exp));
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
     auto dst = gen.convert_exp(std::move(unary));
 
     CHECK(dst->value() == "main.0");
@@ -150,7 +148,7 @@ TEST_CASE("convert_exp for a unary complement exp") {
     auto op = std::make_unique<Ast::Complement>();
     auto exp = std::make_unique<Ast::Constant>("420");
     auto unary = std::make_unique<Ast::Unary>(std::move(op), std::move(exp));
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
 
     auto dst = gen.convert_exp(std::move(unary));
     CHECK(dst->value() == "main.0");
@@ -162,7 +160,7 @@ TEST_CASE("convert_exp for a unary complement exp") {
 }
 
 TEST_CASE("convert_exp for a constant") {
-    Tacky::TackyGenerator gen;
+    Tacky::Generator gen;
     auto exp = std::make_unique<Ast::Constant>("42");
     auto dst = gen.convert_exp(std::move(exp));
     CHECK(dst->value() == "42");

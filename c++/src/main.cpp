@@ -9,8 +9,9 @@
 #include "codegen/emission.h"
 #include "lexer.h"
 #include "parser.h"
+#include "tacky.h"
 
-enum class Stage { Lex, Parse, Codegen };
+enum class Stage { Lex, Parse, Tacky, Codegen };
 
 void compile(Stage stage, std::string filename) {
     std::ifstream file(filename);
@@ -28,6 +29,13 @@ void compile(Stage stage, std::string filename) {
         auto ast = parser.parse();
         if (stage == Stage::Parse) {
             std::cout << ast.to_string() << std::endl;
+            return;
+        }
+
+        Tacky::Generator gen;
+        auto tacky_ir = gen.convert_ast(ast);
+        if (stage == Stage::Tacky) {
+            std::cout << "Tacky IR generated\n";
             return;
         }
 
