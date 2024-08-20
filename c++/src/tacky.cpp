@@ -7,8 +7,8 @@
 #include "tacky.h"
 
 namespace Tacky {
-std::unique_ptr<Program> Generator::convert_ast(Ast::Program &ast) {
-    return std::make_unique<Program>(convert_function(ast.fn()));
+Program Generator::convert_ast(Ast::Program &ast) {
+    return convert_function(ast.fn());
 }
 
 std::unique_ptr<Function>
@@ -60,9 +60,10 @@ TEST_CASE("convert_ast") {
     Tacky::Generator gen;
     auto tacky_ir = gen.convert_ast(program);
 
-    CHECK(tacky_ir->fn()->body().size() == 2);
-    CHECK(dynamic_cast<Tacky::Unary *>(tacky_ir->fn()->body()[0].release()));
-    CHECK(dynamic_cast<Tacky::Return *>(tacky_ir->fn()->body()[1].release()));
+    auto instrs = tacky_ir.fn()->body();
+    CHECK(instrs.size() == 2);
+    CHECK(dynamic_cast<Tacky::Unary *>(instrs[0].release()));
+    CHECK(dynamic_cast<Tacky::Return *>(instrs[1].release()));
 }
 
 TEST_CASE("convert_function with one statement") {
@@ -74,10 +75,11 @@ TEST_CASE("convert_function with one statement") {
     Tacky::Generator gen;
     auto tacky_fn = gen.convert_function(fn);
 
-    CHECK(tacky_fn->body().size() == 2);
-    CHECK(tacky_fn->body()[0]->to_string() ==
+    auto instrs = tacky_fn->body();
+    CHECK(instrs.size() == 2);
+    CHECK(instrs[0]->to_string() ==
           "Unary(Complement, Constant(123), Var(main.0))");
-    CHECK(tacky_fn->body()[1]->to_string() == "Return(Var(main.0))");
+    CHECK(instrs[1]->to_string() == "Return(Var(main.0))");
 }
 
 TEST_CASE("convert_statement for returning a nested unary complement") {

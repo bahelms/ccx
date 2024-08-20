@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <format>
 #include <memory>
@@ -63,6 +65,7 @@ class Return : public Instruction {
   public:
     Return(std::unique_ptr<Val> v) : _val(std::move(v)) {}
 
+    std::unique_ptr<Val> &val() { return _val; }
     std::string const to_string() override {
         return std::format("Return({})", _val->to_string());
     }
@@ -93,7 +96,10 @@ class Function {
   public:
     Function(std::string name, std::vector<std::unique_ptr<Instruction>> instrs)
         : _name(name), _body(std::move(instrs)) {}
-    std::vector<std::unique_ptr<Instruction>> &body() { return _body; }
+    std::vector<std::unique_ptr<Instruction>> body() {
+        return std::move(_body);
+    }
+    std::string name() { return _name; }
 };
 
 class Program {
@@ -120,7 +126,7 @@ class Generator {
         return _instrs;
     }
 
-    std::unique_ptr<Program> convert_ast(Ast::Program &);
+    Program convert_ast(Ast::Program &);
     std::unique_ptr<Function>
     convert_function(std::unique_ptr<Ast::Function> &);
     void convert_statement(std::unique_ptr<Ast::Statement>);

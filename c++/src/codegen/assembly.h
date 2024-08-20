@@ -1,7 +1,11 @@
-#include "../lexer.h"
-#include "../parser.h"
+#pragma once
+
 #include <array>
 #include <memory>
+
+#include "../lexer.h"
+#include "../parser.h"
+#include "../tacky.h"
 
 namespace Asm {
 class Operand {
@@ -63,13 +67,21 @@ class FunctionDef {
 };
 
 class Program {
-    std::unique_ptr<FunctionDef> _fn_def{};
+    FunctionDef _fn_def{};
 
   public:
     Program(auto fn_def) : _fn_def(std::move(fn_def)) {}
 
-    std::unique_ptr<FunctionDef> fn_def() { return std::move(_fn_def); }
+    FunctionDef fn_def() { return std::move(_fn_def); }
 };
 
-Program generate_assembly(Ast::Program &);
+Program generate_assembly(Tacky::Program &);
+
+class AsmGenerator {
+    std::vector<std::unique_ptr<Instruction>> _instructions{};
+
+  public:
+    std::unique_ptr<FunctionDef>
+    parse_func_def(std::unique_ptr<Tacky::Function> &);
+};
 } // namespace Asm

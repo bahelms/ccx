@@ -26,7 +26,7 @@ clean:
 	rm -f $(OBJ) $(DEPS)
 
 debug_test: $(OBJ)
-	clang++ -Wall -std=c++2a -g -o $@.out $(OBJ)
+	clang++ $(FLAGS) -g -o $@.out $(OBJ)
 	gdb $@.out -- --exit
 
 -include $(DEPS)

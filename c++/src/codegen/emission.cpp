@@ -19,9 +19,9 @@ format_instructions(std::vector<std::unique_ptr<Instruction>> &instrs) {
     return formatted_instrs;
 }
 
-std::string format_func_def(std::unique_ptr<FunctionDef> fn_def) {
-    return std::format("\t.globl {}\n{}:\n{}", fn_def->name(), fn_def->name(),
-                       format_instructions(fn_def->instructions()));
+std::string format_func_def(FunctionDef fn_def) {
+    return std::format("\t.globl {}\n{}:\n{}", fn_def.name(), fn_def.name(),
+                       format_instructions(fn_def.instructions()));
 }
 
 std::string format_operand(Register op) { return "%eax"; }

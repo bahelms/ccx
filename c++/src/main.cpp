@@ -39,7 +39,7 @@ void compile(Stage stage, std::string filename) {
             return;
         }
 
-        auto assembly = Asm::generate_assembly(ast);
+        auto assembly = Asm::generate_assembly(tacky_ir);
         if (stage == Stage::Codegen) {
             return;
         }
