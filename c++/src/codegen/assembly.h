@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <format>
 #include <memory>
 
 #include "../lexer.h"
@@ -24,9 +26,30 @@ class Imm : public Operand {
     std::string const to_string() { return std::format("${}", _value); }
 };
 
-class Register : public Operand {
+class Register {
   public:
-    std::string const to_string() { return "%eax"; }
+    virtual ~Register() = default;
+    virtual std::string const to_string() = 0;
+};
+
+class AX : public Register {
+  public:
+    std::string const to_string() override { return "AX"; }
+};
+
+class R10 : public Register {
+  public:
+    std::string const to_string() override { return "R10"; }
+};
+
+class Reg : public Operand {
+    std::unique_ptr<Register> _register;
+
+  public:
+    Reg(std::unique_ptr<Register> r) : _register(std::move(r)) {}
+    std::string const to_string() {
+        return std::format("Reg({})", _register->to_string());
+    }
 };
 
 class Instruction {

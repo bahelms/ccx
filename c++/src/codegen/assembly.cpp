@@ -25,11 +25,10 @@ parse_instruction(std::unique_ptr<Tacky::Instruction> instr) {
     if (!raw_ptr) {
         throw std::runtime_error("Instruction is not a Tacky::Return");
     }
-
     std::unique_ptr<Tacky::Return> return_instr(raw_ptr);
-    asm_instrs.emplace_back(
-        std::make_unique<Mov>(parse_operand(std::move(return_instr->val())),
-                              std::make_unique<Register>()));
+    auto reg = std::make_unique<Reg>(std::make_unique<AX>());
+    asm_instrs.emplace_back(std::make_unique<Mov>(
+        parse_operand(std::move(return_instr->val())), std::move(reg)));
     asm_instrs.emplace_back(std::make_unique<Ret>());
 
     return asm_instrs;
@@ -70,7 +69,7 @@ TEST_CASE("generating a simple program") {
 
     CHECK(fn_def.name() == "main");
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, %eax");
+    CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
     CHECK(instrs[1]->to_string() == "ret");
 }
 
@@ -87,22 +86,45 @@ TEST_CASE("parsing a function definition without arguments") {
 
     CHECK(fn_def.name() == "main");
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, %eax");
+    CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
     CHECK(instrs[1]->to_string() == "ret");
 }
 
-TEST_CASE("parsing a return instruction produces mov and ret instructions") {
+TEST_CASE("parsing a unary complement instruction") {
+    auto op = std::make_unique<Tacky::Complement>();
+    auto src = std::make_unique<Tacky::Constant>("789");
+    auto dst = std::make_unique<Tacky::Var>("tmp.0");
+    auto unary = std::make_unique<Tacky::Unary>(std::move(op), std::move(src),
+                                                std::move(dst));
+    auto instrs = Asm::parse_instruction(std::move(unary));
+    CHECK(instrs.size() == 2);
+    CHECK(instrs[0]->to_string() == "movl $789, tmp.0");
+    CHECK(instrs[1]->to_string() == "not tmp.0");
+}
 
+TEST_CASE("parsing a unary negate instruction") {
+    auto op = std::make_unique<Tacky::Negate>();
+    auto src = std::make_unique<Tacky::Constant>("789");
+    auto dst = std::make_unique<Tacky::Var>("tmp.0");
+    auto unary = std::make_unique<Tacky::Unary>(std::move(op), std::move(src),
+                                                std::move(dst));
+    auto instrs = Asm::parse_instruction(std::move(unary));
+    CHECK(instrs.size() == 2);
+    CHECK(instrs[0]->to_string() == "movl $789, tmp.0");
+    CHECK(instrs[1]->to_string() == "neg tmp.0");
+}
+
+TEST_CASE("parsing a return instruction produces mov and ret instructions") {
     auto val = std::make_unique<Tacky::Constant>("789");
     auto instr = std::make_unique<Tacky::Return>(std::move(val));
     auto instrs = Asm::parse_instruction(std::move(instr));
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, %eax");
+    CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
     CHECK(instrs[1]->to_string() == "ret");
 }
 
 TEST_CASE("constants generate immediate values") {
-    auto operand = Asm::parse_operand(std::make_unique<Tacky::Constant>("789"));
+    auto operand = Asm::parse_operand(std::make_unique<Tacky::Constant>("42"));
     std::unique_ptr<Asm::Imm> imm(dynamic_cast<Asm::Imm *>(operand.release()));
-    CHECK(imm->value() == "789");
+    CHECK(imm->value() == "42");
 }

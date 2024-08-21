@@ -24,7 +24,7 @@ std::string format_func_def(FunctionDef fn_def) {
                        format_instructions(fn_def.instructions()));
 }
 
-std::string format_operand(Register op) { return "%eax"; }
+std::string format_operand(Reg op) { return "%eax"; }
 
 void emit_code(Program &program, std::string source_filename) {
     std::ofstream file(asm_filename(source_filename));
