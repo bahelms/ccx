@@ -40,10 +40,6 @@ void compile(Stage stage, std::string filename) {
         }
 
         auto assembly = Asm::generate_assembly(tacky_ir);
-        if (stage == Stage::Codegen) {
-            return;
-        }
-
         Asm::emit_code(assembly, filename);
     }
 }

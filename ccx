@@ -53,7 +53,7 @@ gcc -E -P $INPUT_FILE -o $PREPROCCESOR_FILE
 ./bin/compiler $PREPROCCESOR_FILE $COMPILER_STAGE_OPTION --no-run
 rm $PREPROCCESOR_FILE
 
-if [[ $COMPILER_STAGE_OPTION == 3 ]]; then
+if [[ $COMPILER_STAGE_OPTION == 4 ]]; then
   # Assembler and Linker
   ASSEMBLY_FILE="${PREPROCCESOR_FILE%?}s"
   gcc $ASSEMBLY_FILE -o "${ASSEMBLY_FILE::-2}"

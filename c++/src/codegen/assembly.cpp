@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <format>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -9,27 +10,47 @@
 #include "assembly.h"
 
 namespace Asm {
-std::unique_ptr<Operand> parse_operand(std::unique_ptr<Tacky::Val> val) {
-    // cast to int here?
-    std::unique_ptr<Tacky::Constant> constant(
-        dynamic_cast<Tacky::Constant *>(val.release()));
-    return std::make_unique<Imm>(constant->value());
+std::unique_ptr<Operand> parse_operand(std::unique_ptr<Tacky::Val> &operand) {
+    if (auto *constant = dynamic_cast<Tacky::Constant *>(operand.get())) {
+        return std::make_unique<Imm>(constant->value());
+    } else if (auto *var = dynamic_cast<Tacky::Var *>(operand.get())) {
+        return std::make_unique<Pseudo>(var->value());
+    } else {
+        throw std::runtime_error("Unknown Operand");
+    }
+}
+
+std::unique_ptr<UnaryOperator>
+parse_unop(std::unique_ptr<Tacky::UnaryOperator> op) {
+    if (auto *comp = dynamic_cast<Tacky::Complement *>(op.get())) {
+        return std::make_unique<Not>();
+    } else {
+        return std::make_unique<Neg>();
+    }
 }
 
 std::vector<std::unique_ptr<Instruction>>
 parse_instruction(std::unique_ptr<Tacky::Instruction> instr) {
     std::vector<std::unique_ptr<Instruction>> asm_instrs{};
 
-    // Parse a Return statement
-    Tacky::Return *raw_ptr = dynamic_cast<Tacky::Return *>(instr.release());
-    if (!raw_ptr) {
-        throw std::runtime_error("Instruction is not a Tacky::Return");
+    if (auto *return_instr = dynamic_cast<Tacky::Return *>(instr.get())) {
+        auto reg = std::make_unique<Reg>(std::make_unique<AX>());
+        asm_instrs.emplace_back(std::make_unique<Mov>(
+            parse_operand(return_instr->val()), std::move(reg)));
+        asm_instrs.emplace_back(std::make_unique<Ret>());
+    } else if (auto *unary_instr = dynamic_cast<Tacky::Unary *>(instr.get())) {
+        std::unique_ptr<Tacky::Val> unary_dst = unary_instr->dst();
+        std::unique_ptr<Tacky::Val> unary_src = unary_instr->src();
+
+        auto mov = std::make_unique<Mov>(parse_operand(unary_src),
+                                         parse_operand(unary_dst));
+        asm_instrs.emplace_back(std::move(mov));
+        auto unary = std::make_unique<Unary>(parse_unop(unary_instr->op()),
+                                             parse_operand(unary_dst));
+        asm_instrs.emplace_back(std::move(unary));
+    } else {
+        throw std::runtime_error("Unknown Instruction");
     }
-    std::unique_ptr<Tacky::Return> return_instr(raw_ptr);
-    auto reg = std::make_unique<Reg>(std::make_unique<AX>());
-    asm_instrs.emplace_back(std::make_unique<Mov>(
-        parse_operand(std::move(return_instr->val())), std::move(reg)));
-    asm_instrs.emplace_back(std::make_unique<Ret>());
 
     return asm_instrs;
 }
@@ -98,8 +119,8 @@ TEST_CASE("parsing a unary complement instruction") {
                                                 std::move(dst));
     auto instrs = Asm::parse_instruction(std::move(unary));
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, tmp.0");
-    CHECK(instrs[1]->to_string() == "not tmp.0");
+    CHECK(instrs[0]->to_string() == "movl $789, Pseudo(tmp.0)");
+    CHECK(instrs[1]->to_string() == "notl Pseudo(tmp.0)");
 }
 
 TEST_CASE("parsing a unary negate instruction") {
@@ -110,8 +131,8 @@ TEST_CASE("parsing a unary negate instruction") {
                                                 std::move(dst));
     auto instrs = Asm::parse_instruction(std::move(unary));
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, tmp.0");
-    CHECK(instrs[1]->to_string() == "neg tmp.0");
+    CHECK(instrs[0]->to_string() == "movl $789, Pseudo(tmp.0)");
+    CHECK(instrs[1]->to_string() == "negl Pseudo(tmp.0)");
 }
 
 TEST_CASE("parsing a return instruction produces mov and ret instructions") {
@@ -124,7 +145,9 @@ TEST_CASE("parsing a return instruction produces mov and ret instructions") {
 }
 
 TEST_CASE("constants generate immediate values") {
-    auto operand = Asm::parse_operand(std::make_unique<Tacky::Constant>("42"));
+    std::unique_ptr<Tacky::Val> constant =
+        std::make_unique<Tacky::Constant>("42");
+    auto operand = Asm::parse_operand(constant);
     std::unique_ptr<Asm::Imm> imm(dynamic_cast<Asm::Imm *>(operand.release()));
     CHECK(imm->value() == "42");
 }

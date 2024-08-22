@@ -23,7 +23,19 @@ class Imm : public Operand {
     Imm(std::string s) : _value(s) {}
 
     std::string value() const { return _value; }
-    std::string const to_string() { return std::format("${}", _value); }
+    std::string const to_string() override {
+        return std::format("${}", _value);
+    }
+};
+
+class Pseudo : public Operand {
+    std::string _identifier{};
+
+  public:
+    Pseudo(std::string id) : _identifier(id) {}
+    std::string const to_string() override {
+        return std::format("Pseudo({})", _identifier);
+    }
 };
 
 class Register {
@@ -47,7 +59,7 @@ class Reg : public Operand {
 
   public:
     Reg(std::unique_ptr<Register> r) : _register(std::move(r)) {}
-    std::string const to_string() {
+    std::string const to_string() override {
         return std::format("Reg({})", _register->to_string());
     }
 };
@@ -66,13 +78,13 @@ class Mov : public Instruction {
     Mov(std::unique_ptr<Operand> s, std::unique_ptr<Operand> d)
         : _src(std::move(s)), _dst(std::move(d)) {}
 
-    std::string const to_string() {
+    std::string const to_string() override {
         return std::format("movl {}, {}", _src->to_string(), _dst->to_string());
     }
 };
 
 class Ret : public Instruction {
-    std::string const to_string() { return "ret"; }
+    std::string const to_string() override { return "ret"; }
 };
 
 class FunctionDef {
@@ -89,6 +101,35 @@ class FunctionDef {
     }
 };
 
+class UnaryOperator {
+  public:
+    virtual ~UnaryOperator() = default;
+    virtual std::string const to_string() = 0;
+};
+
+class Not : public UnaryOperator {
+  public:
+    std::string const to_string() override { return "notl"; }
+};
+
+class Neg : public UnaryOperator {
+  public:
+    std::string const to_string() override { return "negl"; }
+};
+
+class Unary : public Instruction {
+    std::unique_ptr<UnaryOperator> _op{};
+    std::unique_ptr<Operand> _dst{};
+
+  public:
+    Unary(std::unique_ptr<UnaryOperator> op, std::unique_ptr<Operand> dst)
+        : _op(std::move(op)), _dst(std::move(dst)) {}
+
+    std::string const to_string() override {
+        return std::format("{} {}", _op->to_string(), _dst->to_string());
+    }
+};
+
 class Program {
     FunctionDef _fn_def{};
 
@@ -99,12 +140,4 @@ class Program {
 };
 
 Program generate_assembly(Tacky::Program &);
-
-class AsmGenerator {
-    std::vector<std::unique_ptr<Instruction>> _instructions{};
-
-  public:
-    std::unique_ptr<FunctionDef>
-    parse_func_def(std::unique_ptr<Tacky::Function> &);
-};
 } // namespace Asm

@@ -82,6 +82,8 @@ class Unary : public Instruction {
         : _op(std::move(op)), _src(std::move(src)), _dst(std::move(dst)) {}
 
     std::unique_ptr<UnaryOperator> op() { return std::move(_op); }
+    std::unique_ptr<Val> src() { return std::move(_src); }
+    std::unique_ptr<Val> dst() { return std::move(_dst); }
 
     std::string const to_string() override {
         return std::format("Unary({}, {}, {})", _op->to_string(),
