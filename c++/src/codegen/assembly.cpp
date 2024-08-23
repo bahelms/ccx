@@ -10,27 +10,24 @@
 #include "assembly.h"
 
 namespace Asm {
-std::unique_ptr<Operand> parse_operand(std::unique_ptr<Tacky::Val> &operand) {
-    if (auto *constant = dynamic_cast<Tacky::Constant *>(operand.get())) {
-        return std::make_unique<Imm>(constant->value());
-    } else if (auto *var = dynamic_cast<Tacky::Var *>(operand.get())) {
-        return std::make_unique<Pseudo>(var->value());
-    } else {
-        throw std::runtime_error("Unknown Operand");
-    }
+Program Generator::generate_assembly(Tacky::Program &tacky_ir) {
+    Program program(parse_func_def(std::move(tacky_ir.fn())));
+    return program;
 }
 
-std::unique_ptr<UnaryOperator>
-parse_unop(std::unique_ptr<Tacky::UnaryOperator> op) {
-    if (auto *comp = dynamic_cast<Tacky::Complement *>(op.get())) {
-        return std::make_unique<Not>();
-    } else {
-        return std::make_unique<Neg>();
+FunctionDef Generator::parse_func_def(std::unique_ptr<Tacky::Function> fn) {
+    std::vector<std::unique_ptr<Instruction>> fn_instrs{};
+    for (auto &instr : fn->body()) {
+        auto instrs = parse_instruction(std::move(instr));
+        fn_instrs.insert(fn_instrs.end(),
+                         std::make_move_iterator(instrs.begin()),
+                         std::make_move_iterator(instrs.end()));
     }
+    return FunctionDef(fn->name(), std::move(fn_instrs));
 }
 
 std::vector<std::unique_ptr<Instruction>>
-parse_instruction(std::unique_ptr<Tacky::Instruction> instr) {
+Generator::parse_instruction(std::unique_ptr<Tacky::Instruction> instr) {
     std::vector<std::unique_ptr<Instruction>> asm_instrs{};
 
     if (auto *return_instr = dynamic_cast<Tacky::Return *>(instr.get())) {
@@ -55,20 +52,24 @@ parse_instruction(std::unique_ptr<Tacky::Instruction> instr) {
     return asm_instrs;
 }
 
-FunctionDef parse_func_def(std::unique_ptr<Tacky::Function> fn) {
-    std::vector<std::unique_ptr<Instruction>> fn_instrs{};
-    for (auto &instr : fn->body()) {
-        auto instrs = parse_instruction(std::move(instr));
-        fn_instrs.insert(fn_instrs.end(),
-                         std::make_move_iterator(instrs.begin()),
-                         std::make_move_iterator(instrs.end()));
+std::unique_ptr<Operand>
+Generator::parse_operand(std::unique_ptr<Tacky::Val> &operand) {
+    if (auto *constant = dynamic_cast<Tacky::Constant *>(operand.get())) {
+        return std::make_unique<Imm>(constant->value());
+    } else if (auto *var = dynamic_cast<Tacky::Var *>(operand.get())) {
+        return std::make_unique<Pseudo>(var->value());
+    } else {
+        throw std::runtime_error("Unknown Operand");
     }
-    return FunctionDef(fn->name(), std::move(fn_instrs));
 }
 
-Program generate_assembly(Tacky::Program &tacky_ir) {
-    Program program(parse_func_def(std::move(tacky_ir.fn())));
-    return program;
+std::unique_ptr<UnaryOperator>
+Generator::parse_unop(std::unique_ptr<Tacky::UnaryOperator> op) {
+    if (auto *comp = dynamic_cast<Tacky::Complement *>(op.get())) {
+        return std::make_unique<Not>();
+    } else {
+        return std::make_unique<Neg>();
+    }
 }
 } // namespace Asm
 
@@ -84,7 +85,8 @@ TEST_CASE("generating a simple program") {
 
     Tacky::Program tacky_ir(std::move(fn));
 
-    Asm::Program program = Asm::generate_assembly(tacky_ir);
+    Asm::Generator gen;
+    Asm::Program program = gen.generate_assembly(tacky_ir);
     auto fn_def = program.fn_def();
     auto &instrs = fn_def.instructions();
 
@@ -102,7 +104,8 @@ TEST_CASE("parsing a function definition without arguments") {
     auto fn =
         std::make_unique<Tacky::Function>("main", std::move(tacky_instrs));
 
-    auto fn_def = Asm::parse_func_def(std::move(fn));
+    Asm::Generator gen;
+    auto fn_def = gen.parse_func_def(std::move(fn));
     auto &instrs = fn_def.instructions();
 
     CHECK(fn_def.name() == "main");
@@ -117,7 +120,8 @@ TEST_CASE("parsing a unary complement instruction") {
     auto dst = std::make_unique<Tacky::Var>("tmp.0");
     auto unary = std::make_unique<Tacky::Unary>(std::move(op), std::move(src),
                                                 std::move(dst));
-    auto instrs = Asm::parse_instruction(std::move(unary));
+    Asm::Generator gen;
+    auto instrs = gen.parse_instruction(std::move(unary));
     CHECK(instrs.size() == 2);
     CHECK(instrs[0]->to_string() == "movl $789, Pseudo(tmp.0)");
     CHECK(instrs[1]->to_string() == "notl Pseudo(tmp.0)");
@@ -129,7 +133,8 @@ TEST_CASE("parsing a unary negate instruction") {
     auto dst = std::make_unique<Tacky::Var>("tmp.0");
     auto unary = std::make_unique<Tacky::Unary>(std::move(op), std::move(src),
                                                 std::move(dst));
-    auto instrs = Asm::parse_instruction(std::move(unary));
+    Asm::Generator gen;
+    auto instrs = gen.parse_instruction(std::move(unary));
     CHECK(instrs.size() == 2);
     CHECK(instrs[0]->to_string() == "movl $789, Pseudo(tmp.0)");
     CHECK(instrs[1]->to_string() == "negl Pseudo(tmp.0)");
@@ -138,7 +143,8 @@ TEST_CASE("parsing a unary negate instruction") {
 TEST_CASE("parsing a return instruction produces mov and ret instructions") {
     auto val = std::make_unique<Tacky::Constant>("789");
     auto instr = std::make_unique<Tacky::Return>(std::move(val));
-    auto instrs = Asm::parse_instruction(std::move(instr));
+    Asm::Generator gen;
+    auto instrs = gen.parse_instruction(std::move(instr));
     CHECK(instrs.size() == 2);
     CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
     CHECK(instrs[1]->to_string() == "ret");
@@ -147,7 +153,8 @@ TEST_CASE("parsing a return instruction produces mov and ret instructions") {
 TEST_CASE("constants generate immediate values") {
     std::unique_ptr<Tacky::Val> constant =
         std::make_unique<Tacky::Constant>("42");
-    auto operand = Asm::parse_operand(constant);
+    Asm::Generator gen;
+    auto operand = gen.parse_operand(constant);
     std::unique_ptr<Asm::Imm> imm(dynamic_cast<Asm::Imm *>(operand.release()));
     CHECK(imm->value() == "42");
 }

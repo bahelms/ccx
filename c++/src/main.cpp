@@ -39,7 +39,8 @@ void compile(Stage stage, std::string filename) {
             return;
         }
 
-        auto assembly = Asm::generate_assembly(tacky_ir);
+        Asm::Generator asm_gen;
+        auto assembly = asm_gen.generate_assembly(tacky_ir);
         Asm::emit_code(assembly, filename);
     }
 }

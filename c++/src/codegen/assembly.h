@@ -38,6 +38,16 @@ class Pseudo : public Operand {
     }
 };
 
+class Stack : public Operand {
+    int _offset{};
+
+  public:
+    Stack(int offset) : _offset(offset) {}
+    std::string const to_string() override {
+        return std::format("Stack({})", _offset);
+    }
+};
+
 class Register {
   public:
     virtual ~Register() = default;
@@ -139,5 +149,14 @@ class Program {
     FunctionDef fn_def() { return std::move(_fn_def); }
 };
 
-Program generate_assembly(Tacky::Program &);
+class Generator {
+  public:
+    Program generate_assembly(Tacky::Program &);
+    FunctionDef parse_func_def(std::unique_ptr<Tacky::Function>);
+    std::vector<std::unique_ptr<Instruction>>
+        parse_instruction(std::unique_ptr<Tacky::Instruction>);
+    std::unique_ptr<Operand> parse_operand(std::unique_ptr<Tacky::Val> &);
+    std::unique_ptr<UnaryOperator>
+        parse_unop(std::unique_ptr<Tacky::UnaryOperator>);
+};
 } // namespace Asm
