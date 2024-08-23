@@ -87,20 +87,6 @@ class Ret : public Instruction {
     std::string const to_string() override { return "ret"; }
 };
 
-class FunctionDef {
-    std::string _name{};
-    std::vector<std::unique_ptr<Instruction>> _instructions{};
-
-  public:
-    FunctionDef() = default;
-    FunctionDef(auto n, auto i) : _name(n), _instructions(std::move(i)) {}
-
-    std::string name() { return _name; }
-    std::vector<std::unique_ptr<Instruction>> &instructions() {
-        return _instructions;
-    }
-};
-
 class UnaryOperator {
   public:
     virtual ~UnaryOperator() = default;
@@ -127,6 +113,20 @@ class Unary : public Instruction {
 
     std::string const to_string() override {
         return std::format("{} {}", _op->to_string(), _dst->to_string());
+    }
+};
+
+class FunctionDef {
+    std::string _name{};
+    std::vector<std::unique_ptr<Instruction>> _instructions{};
+
+  public:
+    FunctionDef() = default;
+    FunctionDef(auto n, auto i) : _name(n), _instructions(std::move(i)) {}
+
+    std::string name() { return _name; }
+    std::vector<std::unique_ptr<Instruction>> &instructions() {
+        return _instructions;
     }
 };
 

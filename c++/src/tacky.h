@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <format>
 #include <memory>
+#include <numeric>
 #include <vector>
 
 #include "parser.h"
@@ -102,6 +103,22 @@ class Function {
         return std::move(_body);
     }
     std::string name() { return _name; }
+
+    std::string to_string(int indent = 0) {
+        int next_lvl = indent + 2;
+        std::vector<std::string> str_instrs{};
+        for (auto &instr : _body) {
+            str_instrs.push_back(instr->to_string());
+        }
+        auto body = std::accumulate(
+            str_instrs.begin() + 1, str_instrs.end(), str_instrs[0],
+            [](const std::string &prev, const std::string &next) {
+                return prev + ", " + next;
+            });
+        return std::format(
+            "Function(\n{:<{}}name=\"{}\",\n{:<{}}body={}\n{:<{}})", "",
+            next_lvl, _name, "", next_lvl, body, "", indent);
+    }
 };
 
 class Program {
@@ -110,6 +127,9 @@ class Program {
   public:
     Program(std::unique_ptr<Function> fn) : _fn(std::move(fn)) {}
     std::unique_ptr<Function> &fn() { return _fn; }
+    std::string to_string() {
+        return std::format("Program(\n  {}\n)", _fn->to_string(2));
+    }
 };
 
 class Generator {

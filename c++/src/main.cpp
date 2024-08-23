@@ -35,7 +35,7 @@ void compile(Stage stage, std::string filename) {
         Tacky::Generator gen;
         auto tacky_ir = gen.convert_ast(ast);
         if (stage == Stage::Tacky) {
-            std::cout << "Tacky IR generated\n";
+            std::cout << tacky_ir.to_string() << std::endl;
             return;
         }
 
