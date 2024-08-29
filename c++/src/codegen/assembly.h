@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <format>
+#include <map>
 #include <memory>
 
 #include "../lexer.h"
@@ -29,12 +30,13 @@ class Imm : public Operand {
 };
 
 class Pseudo : public Operand {
-    std::string _identifier{};
+    std::string _name{};
 
   public:
-    Pseudo(std::string id) : _identifier(id) {}
+    Pseudo(std::string id) : _name(id) {}
+    const std::string &name() const { return _name; }
     std::string const to_string() override {
-        return std::format("Pseudo({})", _identifier);
+        return std::format("Pseudo({})", _name);
     }
 };
 
@@ -85,8 +87,15 @@ class Mov : public Instruction {
     std::unique_ptr<Operand> _dst{};
 
   public:
+    Mov() = default;
     Mov(std::unique_ptr<Operand> s, std::unique_ptr<Operand> d)
         : _src(std::move(s)), _dst(std::move(d)) {}
+
+    std::unique_ptr<Operand> &src() { return _src; }
+    std::unique_ptr<Operand> &dst() { return _dst; }
+
+    void set_src(std::unique_ptr<Operand> src) { _src = std::move(src); }
+    void set_dst(std::unique_ptr<Operand> dst) { _dst = std::move(dst); }
 
     std::string const to_string() override {
         return std::format("movl {}, {}", _src->to_string(), _dst->to_string());
@@ -118,8 +127,15 @@ class Unary : public Instruction {
     std::unique_ptr<Operand> _dst{};
 
   public:
+    Unary() = default;
     Unary(std::unique_ptr<UnaryOperator> op, std::unique_ptr<Operand> dst)
         : _op(std::move(op)), _dst(std::move(dst)) {}
+
+    std::unique_ptr<Operand> &dst() { return _dst; }
+    std::unique_ptr<UnaryOperator> &op() { return _op; }
+
+    void set_dst(std::unique_ptr<Operand> dst) { _dst = std::move(dst); }
+    void set_op(std::unique_ptr<UnaryOperator> op) { _op = std::move(op); }
 
     std::string const to_string() override {
         return std::format("{} {}", _op->to_string(), _dst->to_string());
@@ -150,13 +166,22 @@ class Program {
 };
 
 class Generator {
+    int _stack_offset{};
+    int _offset_byte_size = 4;
+    std::map<std::string, int> _cache{};
+
   public:
     Program generate_assembly(Tacky::Program &);
+    Program convert_tacky_to_assembly(Tacky::Program &);
+    Program replace_pseudo_registers(Asm::Program &);
+
     FunctionDef parse_func_def(std::unique_ptr<Tacky::Function>);
     std::vector<std::unique_ptr<Instruction>>
         parse_instruction(std::unique_ptr<Tacky::Instruction>);
     std::unique_ptr<Operand> parse_operand(std::unique_ptr<Tacky::Val> &);
     std::unique_ptr<UnaryOperator>
         parse_unop(std::unique_ptr<Tacky::UnaryOperator>);
+
+    int find_stack_offset(std::string);
 };
 } // namespace Asm

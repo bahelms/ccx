@@ -11,7 +11,7 @@ instruction = Mov(operand src, operand dst) -- only one operand can be an addr
 unary_operator = Not | Neg
 operand = Imm(int) -- immediate value (constant)
         | Reg(reg) -- hardward register
-        | Pseudo(identifier) -- for temp vars from Tacky
+        | Pseudo(identifier name) -- for temp vars from Tacky
         | Stack(int) -- stack addr, int is offset from %rbp
 reg = AX -- size agnostic, can refer to RAX, EAX, or AL
     | R10 -- any R10x register
