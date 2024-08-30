@@ -106,6 +106,16 @@ class Ret : public Instruction {
     std::string const to_string() override { return "ret"; }
 };
 
+class AllocateStack : public Instruction {
+    int _stack_size{};
+
+  public:
+    AllocateStack(int s) : _stack_size(std::abs(s)) {}
+    std::string const to_string() override {
+        return std::format("AllocateStack({})", _stack_size);
+    }
+};
+
 class UnaryOperator {
   public:
     virtual ~UnaryOperator() = default;
@@ -170,10 +180,13 @@ class Generator {
     int _offset_byte_size = 4;
     std::map<std::string, int> _cache{};
 
+    int next_stack_offset(std::string);
+
   public:
     Program generate_assembly(Tacky::Program &);
     Program convert_tacky_to_assembly(Tacky::Program &);
     Program replace_pseudo_registers(Asm::Program &);
+    Program fixup_instructions(Asm::Program &);
 
     FunctionDef parse_func_def(std::unique_ptr<Tacky::Function>);
     std::vector<std::unique_ptr<Instruction>>
@@ -181,7 +194,5 @@ class Generator {
     std::unique_ptr<Operand> parse_operand(std::unique_ptr<Tacky::Val> &);
     std::unique_ptr<UnaryOperator>
         parse_unop(std::unique_ptr<Tacky::UnaryOperator>);
-
-    int find_stack_offset(std::string);
 };
 } // namespace Asm

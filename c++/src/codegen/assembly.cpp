@@ -86,14 +86,14 @@ Program Generator::replace_pseudo_registers(Program &program) {
         if (auto *mov = dynamic_cast<Mov *>(instr.get())) {
             auto stack_mov = std::make_unique<Mov>();
             if (auto *reg = dynamic_cast<Pseudo *>(mov->src().get())) {
-                auto offset = find_stack_offset(reg->name());
+                auto offset = next_stack_offset(reg->name());
                 stack_mov->set_src(std::make_unique<Stack>(offset));
             } else {
                 stack_mov->set_src(std::move(mov->src()));
             }
 
             if (auto *reg = dynamic_cast<Pseudo *>(mov->dst().get())) {
-                auto offset = find_stack_offset(reg->name());
+                auto offset = next_stack_offset(reg->name());
                 stack_mov->set_dst(std::make_unique<Stack>(offset));
             } else {
                 stack_mov->set_dst(std::move(mov->dst()));
@@ -104,7 +104,7 @@ Program Generator::replace_pseudo_registers(Program &program) {
             stack_unary->set_op(std::move(unary->op()));
 
             if (auto *reg = dynamic_cast<Pseudo *>(unary->dst().get())) {
-                auto offset = find_stack_offset(reg->name());
+                auto offset = next_stack_offset(reg->name());
                 stack_unary->set_dst(std::make_unique<Stack>(offset));
             } else {
                 stack_unary->set_dst(std::move(unary->dst()));
@@ -118,7 +118,15 @@ Program Generator::replace_pseudo_registers(Program &program) {
     return Program(FunctionDef(fn.name(), std::move(stack_instrs)));
 }
 
-int Generator::find_stack_offset(std::string key) {
+Program Generator::fixup_instructions(Program &program) {
+    auto fn = program.fn_def();
+    auto instrs = std::move(fn.instructions());
+    instrs.emplace(instrs.begin(),
+                   std::make_unique<AllocateStack>(_stack_offset));
+    return Program(FunctionDef(fn.name(), std::move(instrs)));
+}
+
+int Generator::next_stack_offset(std::string key) {
     auto iter = _cache.find(key);
     if (iter != _cache.end()) {
         return iter->second;
@@ -129,6 +137,34 @@ int Generator::find_stack_offset(std::string key) {
 } // namespace Asm
 
 //// TESTS ////
+
+TEST_CASE("fixup_instructions expands mov instructions with temp register") {}
+
+TEST_CASE("fixup_instructions adds stack allocator") {
+    auto mov1 = std::make_unique<Asm::Mov>(
+        std::make_unique<Asm::Imm>("12"), std::make_unique<Asm::Pseudo>("a.0"));
+    auto mov2 = std::make_unique<Asm::Mov>(
+        std::make_unique<Asm::Imm>("13"), std::make_unique<Asm::Pseudo>("a.1"));
+    auto mov3 = std::make_unique<Asm::Mov>(
+        std::make_unique<Asm::Imm>("14"), std::make_unique<Asm::Pseudo>("a.2"));
+    std::vector<std::unique_ptr<Asm::Instruction>> instrs{};
+    instrs.emplace_back(std::move(mov1));
+    instrs.emplace_back(std::move(mov2));
+    instrs.emplace_back(std::move(mov3));
+    auto program = Asm::Program(Asm::FunctionDef("test", std::move(instrs)));
+
+    Asm::Generator gen;
+    auto stack_prog = gen.replace_pseudo_registers(program);
+    auto fixed_prog = gen.fixup_instructions(stack_prog);
+    auto fn_def = fixed_prog.fn_def();
+    auto &fixed_instrs = fn_def.instructions();
+
+    CHECK(fixed_instrs.size() == 4);
+    CHECK(fixed_instrs[0]->to_string() == "AllocateStack(12)");
+    CHECK(fixed_instrs[1]->to_string() == "movl $12, Stack(-4)");
+    CHECK(fixed_instrs[2]->to_string() == "movl $13, Stack(-8)");
+    CHECK(fixed_instrs[3]->to_string() == "movl $14, Stack(-12)");
+}
 
 TEST_CASE("replace pseudo registers with stacks") {
     auto mov1 = std::make_unique<Asm::Mov>(
