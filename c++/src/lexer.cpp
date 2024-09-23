@@ -18,19 +18,18 @@ const std::vector<Token> &Lexer::generate_tokens() {
 
         if (std::regex_match(str_ch, whitespace)) {
             flush_char_buffer();
-        } else if (ch == ';') {
+        } else if (ch == '(' || ch == ')' || ch == ';' || ch == '~' ||
+                   ch == '{' || ch == '}') {
             flush_char_buffer();
-            _tokens.emplace_back(Token(";"));
-        } else if (ch == '(') {
+            _tokens.emplace_back(Token(std::string(1, ch)));
+        } else if (ch == '-') {
             flush_char_buffer();
-            _tokens.emplace_back(Token("("));
-        } else if (ch == ')') {
-            flush_char_buffer();
-            _tokens.emplace_back(Token(")"));
-        } else if (ch == '{') {
-            _tokens.emplace_back(Token("{"));
-        } else if (ch == '}') {
-            _tokens.emplace_back(Token("}"));
+            if (_stream.peek() == '-') {
+                _stream.get(ch);
+                _tokens.emplace_back("--", TokenType::Decrement);
+            } else {
+                _tokens.emplace_back(Token(std::string(1, ch)));
+            }
         } else {
             _char_buffer.push_back(ch);
         }
@@ -52,6 +51,65 @@ void Lexer::flush_char_buffer() {
     }
 }
 
+TEST_CASE("out of order unarys") {
+    std::stringstream source("2-");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens.size() == 2);
+    CHECK(tokens[0].value() == "2");
+    CHECK(tokens[1].value() == "-");
+}
+
+TEST_CASE("unarys with parens") {
+    std::stringstream source("~(-2)");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens.size() == 5);
+    CHECK(tokens[0].value() == "~");
+    CHECK(tokens[1].value() == "(");
+    CHECK(tokens[2].value() == "-");
+    CHECK(tokens[3].value() == "2");
+    CHECK(tokens[4].value() == ")");
+}
+
+TEST_CASE("unary stream") {
+    std::stringstream source("-~--~");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens[0].value() == "-");
+    CHECK(tokens[0].type() == TokenType::Literal);
+    CHECK(tokens[1].value() == "~");
+    CHECK(tokens[1].type() == TokenType::Literal);
+    CHECK(tokens[2].value() == "--");
+    CHECK(tokens[2].type() == TokenType::Decrement);
+    CHECK(tokens[3].value() == "~");
+    CHECK(tokens[3].type() == TokenType::Literal);
+}
+
+TEST_CASE("decrement token") {
+    std::stringstream source("--");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens[0].value() == "--");
+    CHECK(tokens[0].type() == TokenType::Decrement);
+}
+
+TEST_CASE("bitwise complement token") {
+    std::stringstream source("~");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens[0].value() == "~");
+    CHECK(tokens[0].type() == TokenType::Literal);
+}
+
+TEST_CASE("hyphen token") {
+    std::stringstream source("-");
+    Lexer lex(source);
+    auto tokens = lex.generate_tokens();
+    CHECK(tokens[0].value() == "-");
+    CHECK(tokens[0].type() == TokenType::Literal);
+}
+
 TEST_CASE("identifiers can't start with a digit") {
     std::stringstream source("2foo;");
     Lexer lex(source);
@@ -67,7 +125,7 @@ TEST_CASE("identifiers can have digits") {
     CHECK(tokens[0].value() == "i2x6");
     CHECK(tokens[0].type() == TokenType::Identifier);
     CHECK(tokens[1].value() == "(");
-    CHECK(tokens[1].type() == TokenType::Punct);
+    CHECK(tokens[1].type() == TokenType::Literal);
 }
 
 TEST_CASE("constant token") {

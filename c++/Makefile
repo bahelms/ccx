@@ -1,12 +1,32 @@
-.PHONY: test
+.PHONY: install test clean
 
-compiler: src/*.cpp src/codegen/*.cpp
+COMPILER=../bin/compiler
+FLAGS=-Wall -std=c++2a -MMD -MP
+SRC=$(wildcard src/*.cpp src/codegen/*.cpp)
+OBJ=$(SRC:.cpp=.o)
+DEPS=$(OBJ:.o=.d)
+
+all: $(COMPILER)
+
+# link object files into executable
+$(COMPILER): $(OBJ)
+	clang++ $(FLAGS) -o $@ $(OBJ)
+
+# build object files
+%.o: %.cpp
+	clang++ $(FLAGS) -c $< -o $@
+
+test: $(COMPILER)
+	$< --exit
+
+install:
 	mkdir -p ../bin
-	clang++ -Wall -std=c++2a -o ../bin/compiler $^
 
-test: compiler
-	../bin/compiler --exit
+clean:
+	rm -f $(OBJ) $(DEPS)
 
-debug_test: main.cpp lexer.cpp
-	clang++ -Wall -std=c++2a -g -o main_debug.out $^
-	gdb main_debug.out -- --exit
+debug_test: $(OBJ)
+	clang++ $(FLAGS) -g -o $@.out $(OBJ)
+	gdb $@.out -- --exit
+
+-include $(DEPS)

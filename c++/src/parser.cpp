@@ -5,14 +5,15 @@
 #include "lexer.h"
 #include "parser.h"
 
-AST Parser::parse() {
+namespace Ast {
+Program Parser::parse() {
     auto fn = parse_function();
     if (_current_token != _tokens.size()) {
         throw SyntaxError(std::format("Unexpected token found: {}",
                                       _tokens[_current_token].value()));
     }
 
-    AST ast(std::move(fn));
+    Program ast(std::move(fn));
     return ast;
 }
 
@@ -52,14 +53,80 @@ std::unique_ptr<Statement> Parser::parse_statement() {
 }
 
 std::unique_ptr<Exp> Parser::parse_exp() {
-    const Token &token = _tokens[_current_token++];
-    if (token.type() != TokenType::Constant) {
-        throw SyntaxError(std::format("Not a constant: {}", token.value()));
+    if (_current_token >= _tokens.size()) {
+        throw SyntaxError(std::format("Invalid expression"));
     }
-    return std::make_unique<Constant>(token.value());
+
+    const Token &token = _tokens[_current_token++];
+    if (token.type() == TokenType::Constant) {
+        return std::make_unique<Constant>(token.value());
+    } else if (token.value() == "~") {
+        return std::make_unique<Unary>(std::make_unique<Complement>(),
+                                       parse_exp());
+    } else if (token.value() == "-") {
+        return std::make_unique<Unary>(std::make_unique<Negate>(), parse_exp());
+    } else if (token.value() == "(") {
+        auto exp = parse_exp();
+        expect(")");
+        return exp;
+    } else {
+        throw SyntaxError(std::format("Invalid expression: {}", token.value()));
+    }
 }
 
 //// TESTS ////
+
+TEST_CASE("Parser::parse_exp for decrement") {
+    Parser parser(std::vector<Token>(
+        {{"--", TokenType::Decrement}, {"100", TokenType::Constant}}));
+    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Invalid expression: --",
+                           SyntaxError);
+}
+
+TEST_CASE("Parser::parse_exp for parenthesized expression") {
+    Parser parser(std::vector<Token>(
+        {{"~"}, {"("}, {"-"}, {"100", TokenType::Constant}, {")"}}));
+    auto exp = parser.parse_exp();
+    CHECK(exp->to_string() == "Complement(Negate(Constant(100)))");
+
+    parser = Parser(std::vector<Token>({{"~"},
+                                        {"("},
+                                        {"("},
+                                        {"("},
+                                        {"-"},
+                                        {"100", TokenType::Constant},
+                                        {")"},
+                                        {")"},
+                                        {")"}}));
+    CHECK(parser.parse_exp()->to_string() ==
+          "Complement(Negate(Constant(100)))");
+
+    parser = Parser(std::vector<Token>({
+        {"~"},
+        {"("},
+        {"-"},
+        {"100", TokenType::Constant},
+    }));
+    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Missing \")\"", SyntaxError);
+}
+
+TEST_CASE("Parser::parse_exp for negation as a suffix") {
+    Parser parser(std::vector<Token>{{"-"}});
+    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Invalid expression",
+                           SyntaxError);
+}
+
+TEST_CASE("Parser::parse_exp for negation") {
+    Parser parser(std::vector<Token>({{"-"}, {"100", TokenType::Constant}}));
+    auto exp = parser.parse_exp();
+    CHECK(exp->to_string() == "Negate(Constant(100))");
+}
+
+TEST_CASE("Parser::parse_exp for bitwise complement") {
+    Parser parser(std::vector<Token>({{"~"}, {"100", TokenType::Constant}}));
+    auto exp = parser.parse_exp();
+    CHECK(exp->to_string() == "Complement(Constant(100))");
+}
 
 TEST_CASE("Parser::parse with extra tokens") {
     std::vector<Token> tokens{
@@ -133,6 +200,14 @@ TEST_CASE("Parser::parse_statement success") {
     CHECK(stmt->to_string() == "Return(Constant(1234))");
 }
 
+TEST_CASE("Parser::parse_statement with out of order negation") {
+    std::vector<Token> tokens{
+        {"return"}, {"1234", TokenType::Constant}, {"-"}, {";"}};
+    Parser parser(tokens);
+    REQUIRE_THROWS_WITH_AS(parser.parse_statement(),
+                           "Expected \";\" but got \"-\"", SyntaxError);
+}
+
 TEST_CASE("Parser::parse_statement error") {
     std::vector<Token> tokens{{"bork"}, {"1234", TokenType::Constant}, {";"}};
     Parser parser(tokens);
@@ -146,13 +221,13 @@ TEST_CASE("Parser::parse_statement error") {
 
     tokens = {{"return"}, {";"}};
     Parser parser3(tokens);
-    REQUIRE_THROWS_WITH_AS(parser3.parse_statement(), "Not a constant: ;",
+    REQUIRE_THROWS_WITH_AS(parser3.parse_statement(), "Invalid expression: ;",
                            SyntaxError);
 }
 
 TEST_CASE("Parser::parse_exp error") {
     Parser parser(std::vector<Token>({{"bark", TokenType::Identifier}}));
-    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Not a constant: bark",
+    REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Invalid expression: bark",
                            SyntaxError);
 }
 
@@ -171,3 +246,4 @@ TEST_CASE("statements have string representations") {
     Return stmt(std::make_unique<Constant>("23"));
     CHECK(stmt.to_string() == "Return(Constant(23))");
 }
+} // namespace Ast

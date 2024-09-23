@@ -28,12 +28,16 @@ case $INPUT_FILE in
   COMPILER_STAGE_OPTION=1
   set_input_file $2
   ;;
-  "--codegen")
+  "--tacky")
   COMPILER_STAGE_OPTION=2
   set_input_file $2
   ;;
-  *)
+  "--codegen")
   COMPILER_STAGE_OPTION=3
+  set_input_file $2
+  ;;
+  *)
+  COMPILER_STAGE_OPTION=4
   ;;
 esac
 
@@ -49,7 +53,9 @@ gcc -E -P $INPUT_FILE -o $PREPROCCESOR_FILE
 ./bin/compiler $PREPROCCESOR_FILE $COMPILER_STAGE_OPTION --no-run
 rm $PREPROCCESOR_FILE
 
-# Assembler and Linker
-ASSEMBLY_FILE="${PREPROCCESOR_FILE%?}s"
-gcc $ASSEMBLY_FILE -o "${ASSEMBLY_FILE::-2}"
-rm $ASSEMBLY_FILE
+if [[ $COMPILER_STAGE_OPTION == 4 ]]; then
+  # Assembler and Linker
+  ASSEMBLY_FILE="${PREPROCCESOR_FILE%?}s"
+  gcc $ASSEMBLY_FILE -o "${ASSEMBLY_FILE::-2}"
+  rm $ASSEMBLY_FILE
+fi

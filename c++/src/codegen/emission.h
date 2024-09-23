@@ -2,6 +2,6 @@
 
 #include "assembly.h"
 
-namespace ASM {
+namespace Asm {
 void emit_code(Program &, std::string);
 }
