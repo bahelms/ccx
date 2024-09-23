@@ -13,8 +13,7 @@ namespace Asm {
 Program Generator::generate_assembly(Tacky::Program &tacky_ir) {
     auto assembly = convert_tacky_to_assembly(tacky_ir);
     assembly = replace_pseudo_registers(assembly);
-    // return fixup_instructions(assembly);
-    return assembly;
+    return fixup_instructions(assembly);
 }
 
 Program Generator::convert_tacky_to_assembly(Tacky::Program &tacky_ir) {
@@ -176,10 +175,10 @@ TEST_CASE("fixup_instructions expands mov instructions with temp register") {
     auto &fixed_instrs = fn_def.instructions();
 
     CHECK(fixed_instrs.size() == 4);
-    CHECK(fixed_instrs[0]->to_string() == "AllocateStack(0)");
-    CHECK(fixed_instrs[1]->to_string() == "movl Stack(-4), Reg(R10)");
-    CHECK(fixed_instrs[2]->to_string() == "movl Reg(R10), Stack(-8)");
-    CHECK(fixed_instrs[3]->to_string() == "movl $13, Stack(-8)");
+    CHECK(fixed_instrs[0]->to_string() == "subq $0, %rsp");
+    CHECK(fixed_instrs[1]->to_string() == "movl -4(%rbp), %r10d");
+    CHECK(fixed_instrs[2]->to_string() == "movl %r10d, -8(%rbp)");
+    CHECK(fixed_instrs[3]->to_string() == "movl $13, -8(%rbp)");
 }
 
 TEST_CASE("fixup_instructions adds stack allocator") {
@@ -202,10 +201,10 @@ TEST_CASE("fixup_instructions adds stack allocator") {
     auto &fixed_instrs = fn_def.instructions();
 
     CHECK(fixed_instrs.size() == 4);
-    CHECK(fixed_instrs[0]->to_string() == "AllocateStack(12)");
-    CHECK(fixed_instrs[1]->to_string() == "movl $12, Stack(-4)");
-    CHECK(fixed_instrs[2]->to_string() == "movl $13, Stack(-8)");
-    CHECK(fixed_instrs[3]->to_string() == "movl $14, Stack(-12)");
+    CHECK(fixed_instrs[0]->to_string() == "subq $12, %rsp");
+    CHECK(fixed_instrs[1]->to_string() == "movl $12, -4(%rbp)");
+    CHECK(fixed_instrs[2]->to_string() == "movl $13, -8(%rbp)");
+    CHECK(fixed_instrs[3]->to_string() == "movl $14, -12(%rbp)");
 }
 
 TEST_CASE("replace pseudo registers with stacks") {
@@ -228,9 +227,9 @@ TEST_CASE("replace pseudo registers with stacks") {
     auto &stack_instrs = fn_def.instructions();
 
     CHECK(stack_instrs.size() == 4);
-    CHECK(stack_instrs[0]->to_string() == "movl $12, Stack(-4)");
-    CHECK(stack_instrs[1]->to_string() == "movl $88, Stack(-8)");
-    CHECK(stack_instrs[2]->to_string() == "negl Stack(-4)");
+    CHECK(stack_instrs[0]->to_string() == "movl $12, -4(%rbp)");
+    CHECK(stack_instrs[1]->to_string() == "movl $88, -8(%rbp)");
+    CHECK(stack_instrs[2]->to_string() == "negl -4(%rbp)");
     CHECK(stack_instrs[3]->to_string() == "ret");
 }
 
@@ -251,7 +250,7 @@ TEST_CASE("convert tacky to assembly") {
 
     CHECK(fn_def.name() == "main");
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
+    CHECK(instrs[0]->to_string() == "movl $789, %eax");
     CHECK(instrs[1]->to_string() == "ret");
 }
 
@@ -269,7 +268,7 @@ TEST_CASE("parsing a function definition without arguments") {
 
     CHECK(fn_def.name() == "main");
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
+    CHECK(instrs[0]->to_string() == "movl $789, %eax");
     CHECK(instrs[1]->to_string() == "ret");
 }
 
@@ -305,7 +304,7 @@ TEST_CASE("parsing a return instruction produces mov and ret instructions") {
     Asm::Generator gen;
     auto instrs = gen.parse_instruction(std::move(instr));
     CHECK(instrs.size() == 2);
-    CHECK(instrs[0]->to_string() == "movl $789, Reg(AX)");
+    CHECK(instrs[0]->to_string() == "movl $789, %eax");
     CHECK(instrs[1]->to_string() == "ret");
 }
 

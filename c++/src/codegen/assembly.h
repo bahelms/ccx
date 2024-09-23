@@ -46,7 +46,7 @@ class Stack : public Operand {
   public:
     Stack(int offset) : _offset(offset) {}
     std::string const to_string() override {
-        return std::format("Stack({})", _offset);
+        return std::format("{}(%rbp)", _offset);
     }
 };
 
@@ -58,12 +58,12 @@ class Register {
 
 class AX : public Register {
   public:
-    std::string const to_string() override { return "AX"; }
+    std::string const to_string() override { return "%eax"; }
 };
 
 class R10 : public Register {
   public:
-    std::string const to_string() override { return "R10"; }
+    std::string const to_string() override { return "%r10d"; }
 };
 
 class Reg : public Operand {
@@ -71,9 +71,7 @@ class Reg : public Operand {
 
   public:
     Reg(std::unique_ptr<Register> r) : _register(std::move(r)) {}
-    std::string const to_string() override {
-        return std::format("Reg({})", _register->to_string());
-    }
+    std::string const to_string() override { return _register->to_string(); }
 };
 
 class Instruction {
@@ -112,7 +110,7 @@ class AllocateStack : public Instruction {
   public:
     AllocateStack(int s) : _stack_size(std::abs(s)) {}
     std::string const to_string() override {
-        return std::format("AllocateStack({})", _stack_size);
+        return std::format("subq ${}, %rsp", _stack_size);
     }
 };
 
