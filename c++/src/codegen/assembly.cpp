@@ -120,10 +120,32 @@ Program Generator::replace_pseudo_registers(Program &program) {
 
 Program Generator::fixup_instructions(Program &program) {
     auto fn = program.fn_def();
-    auto instrs = std::move(fn.instructions());
-    instrs.emplace(instrs.begin(),
-                   std::make_unique<AllocateStack>(_stack_offset));
-    return Program(FunctionDef(fn.name(), std::move(instrs)));
+    std::vector<std::unique_ptr<Instruction>> expanded_instrs{};
+
+    // TODO: find or track the greatest stack offset since the current one will
+    // be different once this handles multiple functions
+    expanded_instrs.emplace_back(
+        std::make_unique<AllocateStack>(_stack_offset));
+
+    for (auto &instr : fn.instructions()) {
+        // expand Mov with two Stacks
+        if (auto *mov = dynamic_cast<Mov *>(instr.get())) {
+            auto *src = dynamic_cast<Stack *>(mov->src().get());
+            auto *dst = dynamic_cast<Stack *>(mov->dst().get());
+            if (src && dst) {
+                expanded_instrs.emplace_back(std::make_unique<Mov>(
+                    std::move(mov->src()),
+                    std::make_unique<Reg>(std::make_unique<R10>())));
+                expanded_instrs.emplace_back(std::make_unique<Mov>(
+                    std::make_unique<Reg>(std::make_unique<R10>()),
+                    std::move(mov->dst())));
+                continue;
+            }
+        }
+        expanded_instrs.emplace_back(std::move(instr));
+    }
+
+    return Program(FunctionDef(fn.name(), std::move(expanded_instrs)));
 }
 
 int Generator::next_stack_offset(std::string key) {
@@ -138,7 +160,27 @@ int Generator::next_stack_offset(std::string key) {
 
 //// TESTS ////
 
-TEST_CASE("fixup_instructions expands mov instructions with temp register") {}
+TEST_CASE("fixup_instructions expands mov instructions with temp register") {
+    std::vector<std::unique_ptr<Asm::Instruction>> instrs{};
+    auto mov1 = std::make_unique<Asm::Mov>(std::make_unique<Asm::Stack>(-4),
+                                           std::make_unique<Asm::Stack>(-8));
+    auto mov2 = std::make_unique<Asm::Mov>(std::make_unique<Asm::Imm>("13"),
+                                           std::make_unique<Asm::Stack>(-8));
+    instrs.emplace_back(std::move(mov1));
+    instrs.emplace_back(std::move(mov2));
+    auto program = Asm::Program(Asm::FunctionDef("test", std::move(instrs)));
+
+    Asm::Generator gen;
+    auto fixed_prog = gen.fixup_instructions(program);
+    auto fn_def = fixed_prog.fn_def();
+    auto &fixed_instrs = fn_def.instructions();
+
+    CHECK(fixed_instrs.size() == 4);
+    CHECK(fixed_instrs[0]->to_string() == "AllocateStack(0)");
+    CHECK(fixed_instrs[1]->to_string() == "movl Stack(-4), Reg(R10)");
+    CHECK(fixed_instrs[2]->to_string() == "movl Reg(R10), Stack(-8)");
+    CHECK(fixed_instrs[3]->to_string() == "movl $13, Stack(-8)");
+}
 
 TEST_CASE("fixup_instructions adds stack allocator") {
     auto mov1 = std::make_unique<Asm::Mov>(
