@@ -1,11 +1,14 @@
 use regex::Regex;
-use std::{io::BufReader, io::Read};
+use std::io::{BufRead, BufReader, Read};
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Constant(String),
     Identifier(String),
     Literal(String), // Punctuation - can make these their own tokens (OpenBrace, etc)
+    Complement(String),
+    Negation(String),
+    Decrement(String),
 }
 
 pub struct Lexer<T> {
@@ -39,6 +42,23 @@ impl<T: Read> Lexer<T> {
                 }
                 '{' | '}' => {
                     self.tokens.push(Token::Literal(ch.to_string()));
+                }
+                '~' => {
+                    self.flush_char_buffer();
+                    self.tokens.push(Token::Complement(ch.to_string()));
+                }
+                '-' => {
+                    self.flush_char_buffer();
+                    match self.reader.fill_buf() {
+                        Ok(buffer) => {
+                            if buffer[0] == '-' {
+                                ch = self.reader.consume(1);
+                                self.tokens.push(Token::Decrement(ch.to_string()));
+                            }
+                        }
+                        Err(e) => panic!("Syntax error: {}", e),
+                    }
+                    self.tokens.push(Token::Negation(ch.to_string()));
                 }
                 _ => {
                     let ch_str = ch.to_string();
@@ -101,6 +121,34 @@ mod tests {
         let tokens = lexer.generate_tokens();
         assert_eq!(tokens[0], Token::Identifier("i2x6".to_string()));
         assert_eq!(tokens[1], Token::Literal("(".to_string()));
+    }
+
+    #[test]
+    fn decrement_token() {
+        let mut lexer = Lexer::new(init_reader("--2;"));
+        let tokens = lexer.generate_tokens();
+        assert_eq!(tokens[0], Token::Decrement("--".to_string()));
+        assert_eq!(tokens[1], Token::Constant("2".to_string()));
+        assert_eq!(tokens[2], Token::Literal(";".to_string()));
+    }
+
+    #[test]
+    fn negation_token() {
+        let mut lexer = Lexer::new(init_reader("-2;"));
+        let tokens = lexer.generate_tokens();
+        assert_eq!(tokens[0], Token::Negation("-".to_string()));
+        assert_eq!(tokens[1], Token::Constant("2".to_string()));
+        assert_eq!(tokens[2], Token::Literal(";".to_string()));
+    }
+
+    #[test]
+    fn bitwise_complement_token() {
+        let mut lexer = Lexer::new(init_reader("~~2;"));
+        let tokens = lexer.generate_tokens();
+        assert_eq!(tokens[0], Token::Complement("~".to_string()));
+        assert_eq!(tokens[1], Token::Complement("~".to_string()));
+        assert_eq!(tokens[2], Token::Constant("2".to_string()));
+        assert_eq!(tokens[3], Token::Literal(";".to_string()));
     }
 
     #[test]
