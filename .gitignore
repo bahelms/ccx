@@ -5,3 +5,5 @@ bin/
 *.d
 test/sources/*.s
 target
+.cache
+benchmarks.txt
