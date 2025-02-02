@@ -9,9 +9,8 @@ const auto code = "int main(void) { return ~(-2); }";
 
 static void Lexer_generate_tokens(benchmark::State &state) {
     std::stringstream source(code);
-    Lexer lex(source);
     for (auto _ : state) {
-        lex.generate_tokens();
+        tokenize(source);
     }
 }
 BENCHMARK(Lexer_generate_tokens);
