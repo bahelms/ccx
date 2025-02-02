@@ -16,8 +16,7 @@ enum class Stage { Lex, Parse, Tacky, Codegen };
 void compile(Stage stage, std::string filename) {
     std::ifstream file(filename);
     if (file) {
-        Lexer lexer(file);
-        auto tokens = lexer.generate_tokens();
+        auto tokens = tokenize(file);
         if (stage == Stage::Lex) {
             for (auto token : tokens) {
                 std::cout << "Token: " << token.value() << std::endl;

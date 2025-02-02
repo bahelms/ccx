@@ -21,19 +21,7 @@ class Token {
     TokenType _type{};
 };
 
-class Lexer {
-  public:
-    Lexer(std::istream &s) : _stream(s) {}
-
-    const std::vector<Token> &generate_tokens();
-
-  private:
-    std::istream &_stream;
-    std::string _char_buffer{};
-    std::vector<Token> _tokens;
-
-    void flush_char_buffer();
-};
+std::vector<Token> tokenize(std::istream &);
 
 class SyntaxError : public std::exception {
   public:
