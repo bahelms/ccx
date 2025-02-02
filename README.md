@@ -1,6 +1,5 @@
 # CCX - a compiler for the C language
 ## Setup
-    $ cd c++
     $ make install
     $ make
 
