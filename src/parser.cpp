@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#include "../doctest.h"
+#include "doctest.h"
 #include "lexer.h"
 #include "parser.h"
 

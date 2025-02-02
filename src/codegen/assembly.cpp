@@ -6,7 +6,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "../../doctest.h"
+#include "../doctest.h"
 #include "assembly.h"
 
 namespace Asm {

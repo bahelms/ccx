@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include "../doctest.h"
+#include "doctest.h"
 #include "parser.h"
 #include "tacky.h"
 

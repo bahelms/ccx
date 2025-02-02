@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "../doctest.h"
+#include "doctest.h"
 #include "lexer.h"
 
 const std::regex identifier("^[a-zA-Z_]\\w*$");

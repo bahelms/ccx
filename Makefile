@@ -1,6 +1,6 @@
 .PHONY: install test clean
 
-COMPILER=../bin/compiler
+COMPILER=bin/compiler
 FLAGS=-Wall -std=c++2a
 DEPS_FLAGS=-MMD -MP
 SRC=$(wildcard src/*.cpp src/codegen/*.cpp)
@@ -23,7 +23,7 @@ test: $(COMPILER)
 	$< --exit
 
 install:
-	mkdir -p ../bin
+	mkdir -p bin
 
 clean:
 	rm -f $(OBJ) $(DEPS)
@@ -33,9 +33,9 @@ debug_test: $(OBJ)
 	gdb $@.out -- --exit
 
 benchmark: compile_benchmarks
-	../bin/benchmark --benchmark_out=benchmarks.txt --benchmark_out_format=console
+	bin/benchmark --benchmark_out=benchmarks.txt --benchmark_out_format=console
 
 compile_benchmarks: $(COMPILER) $(BENCHMARKS)
-	clang++ $(FLAGS) -o ../bin/benchmark $(OBJ_EXCEPT_MAIN) $(BENCHMARKS) -isystem ../../../vendors/benchmark/include -L../../../vendors/benchmark/build/src -lbenchmark -lpthread
+	clang++ $(FLAGS) -o bin/benchmark $(OBJ_EXCEPT_MAIN) $(BENCHMARKS) -isystem ../../vendors/benchmark/include -L../../vendors/benchmark/build/src -lbenchmark -lpthread
 
 -include $(DEPS)

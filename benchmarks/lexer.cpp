@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 
 #define DOCTEST_CONFIG_IMPLEMENT
-#include "../doctest.h"
+#include "../src/doctest.h"
 #include "../src/lexer.h"
 #include "../src/parser.h"
 
