@@ -2,26 +2,75 @@
 
 #include <exception>
 #include <fstream>
+#include <map>
 #include <string>
+#include <variant>
 #include <vector>
 
-enum class TokenType { Literal, Constant, Identifier, Decrement };
+// ignored: whitespace, newlines, eof
+enum class Reserved {
+    // Keywords
+    IntType,
+    Void,
+    Return,
 
-class Token {
-  public:
-    Token() = default;
-    Token(std::string v) : _value(v) {}
-    Token(std::string v, TokenType t) : _value(v), _type(t) {}
+    // Control
+    OpenParen,
+    CloseParen,
+    OpenBrace,
+    CloseBrace,
+    Semicolon,
 
-    std::string value() const { return _value; }
-    TokenType type() const { return _type; }
+    // Operators
+    Negate,
+    Decrement,
+    Complement,
+};
 
-  private:
-    std::string _value{};
-    TokenType _type{};
+// Container tokens
+struct Identifier : std::string {};
+struct Integer : std::string {};
+
+using TokenType = std::variant<Reserved, Identifier, Integer>;
+
+struct Token {
+    TokenType value{};
+
+    std::string_view to_str() const { return "TOKEN"; }
+
+    template <typename T> bool is() const {
+        return std::holds_alternative<T>(value);
+    }
 };
 
 std::vector<Token> tokenize(std::istream &);
+
+/* template <typename E> */
+/* constexpr auto to_str() */
+/* // template <typename E> */
+/* /1* constexpr auto toStringView(E e) { *1/ */
+/* /1*     switch(e) { *1/ */
+/* /1*         case E::Red: return "Red"; *1/ */
+/* /1*         case E::Green: return "Green"; *1/ */
+/* /1*         case E::Blue: return "Blue"; *1/ */
+/* /1*     } *1/ */
+/* /1* } *1/ */
+
+/* enum class OldTokenType { Literal, Constant, Identifier, Decrement }; */
+
+/* class OldToken { */
+/*   public: */
+/*     OldToken() = default; */
+/*     OldToken(std::string v) : _value(v) {} */
+/*     OldToken(std::string v, OldTokenType t) : _value(v), _type(t) {} */
+
+/*     std::string value() const { return _value; } */
+/*     OldTokenType type() const { return _type; } */
+
+/*   private: */
+/*     std::string _value{}; */
+/*     OldTokenType _type{}; */
+/* }; */
 
 class SyntaxError : public std::exception {
   public:

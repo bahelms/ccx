@@ -19,7 +19,7 @@ void compile(Stage stage, std::string filename) {
         auto tokens = tokenize(file);
         if (stage == Stage::Lex) {
             for (auto token : tokens) {
-                std::cout << "Token: " << token.value() << std::endl;
+                std::cout << "Token: " << token.to_str() << std::endl;
             }
             return;
         }

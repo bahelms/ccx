@@ -11,12 +11,41 @@ const std::regex identifier("^[a-zA-Z_]\\w*$");
 const std::regex constant("^[0-9]+$");
 const std::regex whitespace("\\s");
 
+const std::map<std::string_view, Reserved> reserved_lookup{
+    {"int", Reserved::IntType},   {"void", Reserved::Void},
+    {"return", Reserved::Return}, {"(", Reserved::OpenParen},
+    {")", Reserved::CloseParen},  {"{", Reserved::OpenBrace},
+    {"}", Reserved::CloseBrace},  {";", Reserved::Semicolon},
+    {"-", Reserved::Negate},      {"--", Reserved::Decrement},
+    {"~", Reserved::Complement},
+};
+// instead of a map like above use template metaprogramming
+// can we use constexpr here?
+// template <typename E>
+/* constexpr E fromStringView(std::string_view str) { */
+/*     if (str == "int") return E::IntType; */
+/*     if (str == "void") return E::Void; */
+/*     // ... other comparisons ... */
+/*     return E::Invalid; // Add an Invalid enum value */
+/* } */
+
+// to stringify an enum use template metaprogramming
+//
+// template <typename E>
+/* constexpr auto toStringView(E e) { */
+/*     switch(e) { */
+/*         case E::Red: return "Red"; */
+/*         case E::Green: return "Green"; */
+/*         case E::Blue: return "Blue"; */
+/*     } */
+/* } */
+
 void flush_char_buffer(std::string &buffer, auto &tokens) {
     if (!buffer.empty()) {
         if (std::regex_match(buffer, constant)) {
-            tokens.emplace_back(buffer, TokenType::Constant);
+            tokens.emplace_back(Integer{buffer});
         } else if (std::regex_match(buffer, identifier)) {
-            tokens.emplace_back(buffer, TokenType::Identifier);
+            tokens.emplace_back(Identifier{buffer});
         } else {
             throw SyntaxError(std::format(
                 "Identifiers can't begin with a digit: {}", buffer));
@@ -28,6 +57,7 @@ void flush_char_buffer(std::string &buffer, auto &tokens) {
 std::vector<Token> tokenize(std::istream &stream) {
     std::string char_buffer{};
     std::vector<Token> tokens{};
+
     char ch;
     while (stream.get(ch)) {
         std::string str_ch(1, ch);
@@ -37,14 +67,14 @@ std::vector<Token> tokenize(std::istream &stream) {
         } else if (ch == '(' || ch == ')' || ch == ';' || ch == '~' ||
                    ch == '{' || ch == '}') {
             flush_char_buffer(char_buffer, tokens);
-            tokens.emplace_back(Token(std::string(1, ch)));
+            tokens.emplace_back(reserved_lookup.at(str_ch));
         } else if (ch == '-') {
             flush_char_buffer(char_buffer, tokens);
             if (stream.peek() == '-') {
                 stream.get(ch);
-                tokens.emplace_back("--", TokenType::Decrement);
+                tokens.emplace_back(Reserved::Decrement);
             } else {
-                tokens.emplace_back(Token(std::string(1, ch)));
+                tokens.emplace_back(reserved_lookup.at(str_ch));
             }
         } else {
             char_buffer.push_back(ch);
@@ -57,53 +87,46 @@ TEST_CASE("out of order unarys") {
     std::stringstream source("2-");
     auto tokens = tokenize(source);
     CHECK(tokens.size() == 2);
-    CHECK(tokens[0].value() == "2");
-    CHECK(tokens[1].value() == "-");
+    CHECK(std::get<Integer>(tokens[0].value) == "2");
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::Negate);
 }
 
 TEST_CASE("unarys with parens") {
     std::stringstream source("~(-2)");
     auto tokens = tokenize(source);
     CHECK(tokens.size() == 5);
-    CHECK(tokens[0].value() == "~");
-    CHECK(tokens[1].value() == "(");
-    CHECK(tokens[2].value() == "-");
-    CHECK(tokens[3].value() == "2");
-    CHECK(tokens[4].value() == ")");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::OpenParen);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
+    CHECK(std::get<Integer>(tokens[0].value) == "2");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::CloseParen);
 }
 
 TEST_CASE("unary stream") {
     std::stringstream source("-~--~");
     auto tokens = tokenize(source);
-    CHECK(tokens[0].value() == "-");
-    CHECK(tokens[0].type() == TokenType::Literal);
-    CHECK(tokens[1].value() == "~");
-    CHECK(tokens[1].type() == TokenType::Literal);
-    CHECK(tokens[2].value() == "--");
-    CHECK(tokens[2].type() == TokenType::Decrement);
-    CHECK(tokens[3].value() == "~");
-    CHECK(tokens[3].type() == TokenType::Literal);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Decrement);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
 }
 
 TEST_CASE("decrement token") {
     std::stringstream source("--");
     auto tokens = tokenize(source);
-    CHECK(tokens[0].value() == "--");
-    CHECK(tokens[0].type() == TokenType::Decrement);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Decrement);
 }
 
 TEST_CASE("bitwise complement token") {
     std::stringstream source("~");
     auto tokens = tokenize(source);
-    CHECK(tokens[0].value() == "~");
-    CHECK(tokens[0].type() == TokenType::Literal);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
 }
 
 TEST_CASE("hyphen token") {
     std::stringstream source("-");
     auto tokens = tokenize(source);
-    CHECK(tokens[0].value() == "-");
-    CHECK(tokens[0].type() == TokenType::Literal);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
 }
 
 TEST_CASE("identifiers can't start with a digit") {
@@ -116,26 +139,22 @@ TEST_CASE("identifiers can't start with a digit") {
 TEST_CASE("identifiers can have digits") {
     std::stringstream source("i2x6(");
     auto tokens = tokenize(source);
-    CHECK(tokens[0].value() == "i2x6");
-    CHECK(tokens[0].type() == TokenType::Identifier);
-    CHECK(tokens[1].value() == "(");
-    CHECK(tokens[1].type() == TokenType::Literal);
+    CHECK(std::get<Identifier>(tokens[0].value) == "i2x6");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::OpenParen);
 }
 
-TEST_CASE("constant token") {
+TEST_CASE("integer token") {
     std::stringstream source("2246;");
     auto tokens = tokenize(source);
-    const Token &constant = tokens[0];
-    CHECK(constant.value() == "2246");
-    CHECK(constant.type() == TokenType::Constant);
-    CHECK(tokens[1].value() == ";");
+    CHECK(std::get<Integer>(tokens[0].value) == "2246");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Semicolon);
 }
 
 TEST_CASE("whitespace is ignored") {
     std::stringstream source(" \n\t ;  ");
     auto tokens = tokenize(source);
     REQUIRE(tokens.size() == 1);
-    REQUIRE(tokens[0].value() == ";");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Semicolon);
 }
 
 TEST_CASE("simple valid program") {
