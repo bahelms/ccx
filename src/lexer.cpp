@@ -19,26 +19,6 @@ const std::map<std::string_view, Reserved> reserved_lookup{
     {"-", Reserved::Negate},      {"--", Reserved::Decrement},
     {"~", Reserved::Complement},
 };
-// instead of a map like above use template metaprogramming
-// can we use constexpr here?
-// template <typename E>
-/* constexpr E fromStringView(std::string_view str) { */
-/*     if (str == "int") return E::IntType; */
-/*     if (str == "void") return E::Void; */
-/*     // ... other comparisons ... */
-/*     return E::Invalid; // Add an Invalid enum value */
-/* } */
-
-// to stringify an enum use template metaprogramming
-//
-// template <typename E>
-/* constexpr auto toStringView(E e) { */
-/*     switch(e) { */
-/*         case E::Red: return "Red"; */
-/*         case E::Green: return "Green"; */
-/*         case E::Blue: return "Blue"; */
-/*     } */
-/* } */
 
 void flush_char_buffer(std::string &buffer, auto &tokens) {
     if (!buffer.empty()) {
@@ -96,19 +76,19 @@ TEST_CASE("unarys with parens") {
     auto tokens = tokenize(source);
     CHECK(tokens.size() == 5);
     CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::OpenParen);
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
-    CHECK(std::get<Integer>(tokens[0].value) == "2");
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::CloseParen);
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::OpenParen);
+    CHECK(std::get<Reserved>(tokens[2].value) == Reserved::Negate);
+    CHECK(std::get<Integer>(tokens[3].value) == "2");
+    CHECK(std::get<Reserved>(tokens[4].value) == Reserved::CloseParen);
 }
 
 TEST_CASE("unary stream") {
     std::stringstream source("-~--~");
     auto tokens = tokenize(source);
     CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Decrement);
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::Complement);
+    CHECK(std::get<Reserved>(tokens[2].value) == Reserved::Decrement);
+    CHECK(std::get<Reserved>(tokens[3].value) == Reserved::Complement);
 }
 
 TEST_CASE("decrement token") {
@@ -140,14 +120,14 @@ TEST_CASE("identifiers can have digits") {
     std::stringstream source("i2x6(");
     auto tokens = tokenize(source);
     CHECK(std::get<Identifier>(tokens[0].value) == "i2x6");
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::OpenParen);
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::OpenParen);
 }
 
 TEST_CASE("integer token") {
     std::stringstream source("2246;");
     auto tokens = tokenize(source);
     CHECK(std::get<Integer>(tokens[0].value) == "2246");
-    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Semicolon);
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::Semicolon);
 }
 
 TEST_CASE("whitespace is ignored") {

@@ -60,21 +60,23 @@ std::unique_ptr<Exp> Parser::parse_exp() {
     const Token &token = _tokens[_current_token++];
     if (token.is<Integer>()) {
         return std::make_unique<Constant>(token.to_str());
-        /*
-         * This needs to be fixed!!!!
-        } else if (token.is<Reserved>()) {
-            return std::make_unique<Unary>(std::make_unique<Complement>(),
-                                           parse_exp());
-        } else if (token.is<Reserved::Negate>() == "-") {
-            return std::make_unique<Unary>(std::make_unique<Negate>(),
-        parse_exp()); } else if (token.value() == "(") { auto exp = parse_exp();
-            expect(")");
-            return exp;
-        */
-    } else {
+    } else if (token.is<Identifier>()) {
         throw SyntaxError(
             std::format("Invalid expression: {}", token.to_str()));
     }
+
+    auto type = token.get_value<Reserved>();
+    if (type == Reserved::Complement) {
+        return std::make_unique<Unary>(std::make_unique<Complement>(),
+                                       parse_exp());
+    } else if (type == Reserved::Negate) {
+        return std::make_unique<Unary>(std::make_unique<Negate>(), parse_exp());
+    } else if (type == Reserved::OpenParen) {
+        auto exp = parse_exp();
+        expect(")");
+        return exp;
+    }
+    throw SyntaxError(std::format("Invalid expression: {}", token.to_str()));
 }
 
 //// TESTS ////

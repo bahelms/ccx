@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <exception>
 #include <fstream>
 #include <map>
@@ -27,6 +28,33 @@ enum class Reserved {
     Complement,
 };
 
+template <typename T> constexpr std::string_view reserved_string(T token) {
+    switch (token) {
+    case Reserved::IntType:
+        return "int";
+    case Reserved::Void:
+        return "void";
+    case Reserved::Return:
+        return "return";
+    case Reserved::OpenParen:
+        return "(";
+    case Reserved::CloseParen:
+        return ")";
+    case Reserved::OpenBrace:
+        return "{";
+    case Reserved::CloseBrace:
+        return "}";
+    case Reserved::Semicolon:
+        return ";";
+    case Reserved::Negate:
+        return "-";
+    case Reserved::Decrement:
+        return "--";
+    case Reserved::Complement:
+        return "~";
+    }
+}
+
 // Container tokens
 struct Identifier : std::string {};
 struct Integer : std::string {};
@@ -36,41 +64,27 @@ using TokenType = std::variant<Reserved, Identifier, Integer>;
 struct Token {
     TokenType value{};
 
-    std::string_view to_str() const { return "TOKEN"; }
-
-    template <typename T> bool is() const {
+    template <typename T> [[nodiscard]] bool is() const noexcept {
         return std::holds_alternative<T>(value);
+    }
+
+    template <typename T> [[nodiscard]] const T &get_value() const noexcept {
+        assert(is<T>()); // TODO: disable in release build
+        return std::get<T>(value);
+    }
+
+    std::string_view to_str() const {
+        if (is<Reserved>()) {
+            return reserved_string(std::get<Reserved>(value));
+        } else if (is<Integer>()) {
+            return std::get<Integer>(value);
+        } else {
+            return std::get<Identifier>(value);
+        }
     }
 };
 
 std::vector<Token> tokenize(std::istream &);
-
-/* template <typename E> */
-/* constexpr auto to_str() */
-/* // template <typename E> */
-/* /1* constexpr auto toStringView(E e) { *1/ */
-/* /1*     switch(e) { *1/ */
-/* /1*         case E::Red: return "Red"; *1/ */
-/* /1*         case E::Green: return "Green"; *1/ */
-/* /1*         case E::Blue: return "Blue"; *1/ */
-/* /1*     } *1/ */
-/* /1* } *1/ */
-
-/* enum class OldTokenType { Literal, Constant, Identifier, Decrement }; */
-
-/* class OldToken { */
-/*   public: */
-/*     OldToken() = default; */
-/*     OldToken(std::string v) : _value(v) {} */
-/*     OldToken(std::string v, OldTokenType t) : _value(v), _type(t) {} */
-
-/*     std::string value() const { return _value; } */
-/*     OldTokenType type() const { return _type; } */
-
-/*   private: */
-/*     std::string _value{}; */
-/*     OldTokenType _type{}; */
-/* }; */
 
 class SyntaxError : public std::exception {
   public:
