@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cassert>
 #include <exception>
 #include <fstream>
@@ -29,33 +31,26 @@ enum class Reserved {
     Complement,
 };
 
-constexpr std::string_view reserved_string(Reserved token) {
-    // Alt: use an array of pairs and find with the token: {IntType, "int"}
-    switch (token) {
-    case Reserved::IntType:
-        return "int";
-    case Reserved::Void:
-        return "void";
-    case Reserved::Return:
-        return "return";
-    case Reserved::OpenParen:
-        return "(";
-    case Reserved::CloseParen:
-        return ")";
-    case Reserved::OpenBrace:
-        return "{";
-    case Reserved::CloseBrace:
-        return "}";
-    case Reserved::Semicolon:
-        return ";";
-    case Reserved::Negate:
-        return "-";
-    case Reserved::Decrement:
-        return "--";
-    case Reserved::Complement:
-        return "~";
-    }
-    __builtin_unreachable(); // C++23: std::unreachable
+constexpr std::array<std::pair<Reserved, std::string_view>, 11>
+    RESERVED_STRINGS{{
+        {Reserved::IntType, "int"},
+        {Reserved::Void, "void"},
+        {Reserved::Return, "return"},
+        {Reserved::OpenParen, "("},
+        {Reserved::CloseParen, ")"},
+        {Reserved::OpenBrace, "{"},
+        {Reserved::CloseBrace, "}"},
+        {Reserved::Semicolon, ";"},
+        {Reserved::Negate, "-"},
+        {Reserved::Decrement, "--"},
+        {Reserved::Complement, "~"},
+    }};
+
+[[nodiscard]] constexpr std::string_view reserved_string(Reserved token) {
+    auto it =
+        std::find_if(RESERVED_STRINGS.begin(), RESERVED_STRINGS.end(),
+                     [token](const auto &pair) { return pair.first == token; });
+    return it != RESERVED_STRINGS.end() ? it->second : "Unknown Keyword";
 }
 
 // Container tokens

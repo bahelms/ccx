@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <format>
 #include <iostream>
 #include <regex>
@@ -11,14 +12,15 @@ const std::regex identifier("^[a-zA-Z_]\\w*$");
 const std::regex constant("^[0-9]+$");
 const std::regex whitespace("\\s");
 
-const std::map<std::string_view, Reserved> reserved_lookup{
-    {"int", Reserved::IntType},   {"void", Reserved::Void},
-    {"return", Reserved::Return}, {"(", Reserved::OpenParen},
-    {")", Reserved::CloseParen},  {"{", Reserved::OpenBrace},
-    {"}", Reserved::CloseBrace},  {";", Reserved::Semicolon},
-    {"-", Reserved::Negate},      {"--", Reserved::Decrement},
-    {"~", Reserved::Complement},
-};
+[[nodiscard]] constexpr Reserved lookup_reserved(std::string_view keyword) {
+    auto it = std::find_if(
+        RESERVED_STRINGS.begin(), RESERVED_STRINGS.end(),
+        [keyword](const auto &pair) { return pair.second == keyword; });
+
+    if (it != RESERVED_STRINGS.end())
+        return it->first;
+    throw SyntaxError(std::format("Unknown Keyword: {}", keyword));
+}
 
 void flush_char_buffer(std::string &buffer, auto &tokens) {
     if (!buffer.empty()) {
@@ -47,14 +49,14 @@ std::vector<Token> tokenize(std::istream &stream) {
         } else if (ch == '(' || ch == ')' || ch == ';' || ch == '~' ||
                    ch == '{' || ch == '}') {
             flush_char_buffer(char_buffer, tokens);
-            tokens.emplace_back(reserved_lookup.at(str_ch));
+            tokens.emplace_back(lookup_reserved(str_ch));
         } else if (ch == '-') {
             flush_char_buffer(char_buffer, tokens);
             if (stream.peek() == '-') {
                 stream.get(ch);
                 tokens.emplace_back(Reserved::Decrement);
             } else {
-                tokens.emplace_back(reserved_lookup.at(str_ch));
+                tokens.emplace_back(lookup_reserved(str_ch));
             }
         } else {
             char_buffer.push_back(ch);
