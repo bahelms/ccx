@@ -63,6 +63,16 @@ std::vector<Token> tokenize(std::istream &stream) {
     return tokens;
 }
 
+TEST_CASE("to_str works") {
+    std::stringstream source("~(-2)");
+    auto tokens = tokenize(source);
+    CHECK(tokens[0].to_str() == "~");
+    CHECK(tokens[1].to_str() == "(");
+    CHECK(tokens[2].to_str() == "-");
+    CHECK(tokens[3].to_str() == "2");
+    CHECK(tokens[4].to_str() == ")");
+}
+
 TEST_CASE("out of order unarys") {
     std::stringstream source("2-");
     auto tokens = tokenize(source);

@@ -65,13 +65,12 @@ std::unique_ptr<Exp> Parser::parse_exp() {
             std::format("Invalid expression: {}", token.to_str()));
     }
 
-    auto type = token.get_value<Reserved>();
-    if (type == Reserved::Complement) {
+    if (token.is(Reserved::Complement)) {
         return std::make_unique<Unary>(std::make_unique<Complement>(),
                                        parse_exp());
-    } else if (type == Reserved::Negate) {
+    } else if (token.is(Reserved::Negate)) {
         return std::make_unique<Unary>(std::make_unique<Negate>(), parse_exp());
-    } else if (type == Reserved::OpenParen) {
+    } else if (token.is(Reserved::OpenParen)) {
         auto exp = parse_exp();
         expect(")");
         return exp;

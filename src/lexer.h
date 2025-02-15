@@ -5,6 +5,7 @@
 #include <fstream>
 #include <map>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -28,7 +29,8 @@ enum class Reserved {
     Complement,
 };
 
-template <typename T> constexpr std::string_view reserved_string(T token) {
+constexpr std::string_view reserved_string(Reserved token) {
+    // Alt: use an array of pairs and find with the token: {IntType, "int"}
     switch (token) {
     case Reserved::IntType:
         return "int";
@@ -53,16 +55,29 @@ template <typename T> constexpr std::string_view reserved_string(T token) {
     case Reserved::Complement:
         return "~";
     }
+    __builtin_unreachable(); // C++23: std::unreachable
 }
 
 // Container tokens
 struct Identifier : std::string {};
 struct Integer : std::string {};
 
+template <typename... Ts> struct overloaded : Ts... {
+    using Ts::operator()...; // Inherit operator() from all base classes
+};
+
+// Deduction guide to infer template arguments
+template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
 using TokenType = std::variant<Reserved, Identifier, Integer>;
 
 struct Token {
+    // Use class with constructors for better type safety?
     TokenType value{};
+
+    [[nodiscard]] bool is(Reserved token) const noexcept {
+        return is<Reserved>() && get_value<Reserved>() == token;
+    }
 
     template <typename T> [[nodiscard]] bool is() const noexcept {
         return std::holds_alternative<T>(value);
@@ -74,13 +89,13 @@ struct Token {
     }
 
     std::string_view to_str() const {
-        if (is<Reserved>()) {
-            return reserved_string(std::get<Reserved>(value));
-        } else if (is<Integer>()) {
-            return std::get<Integer>(value);
-        } else {
-            return std::get<Identifier>(value);
-        }
+        return std::visit(
+            overloaded{
+                [](Reserved token) { return reserved_string(token); },
+                [](const Identifier &token) { return std::string_view(token); },
+                [](const Integer &token) { return std::string_view(token); },
+            },
+            value);
     }
 };
 
