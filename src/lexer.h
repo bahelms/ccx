@@ -13,6 +13,8 @@
 
 // ignored: whitespace, newlines, eof
 enum class Reserved {
+    Unknown,
+
     // Keywords
     IntType,
     Void,
@@ -28,6 +30,10 @@ enum class Reserved {
     Decrement,
     Complement,
 };
+
+// Container tokens
+struct Identifier : std::string {};
+struct Integer : std::string {};
 
 constexpr std::array<std::pair<Reserved, std::string_view>, 11>
     RESERVED_STRINGS{{
@@ -50,10 +56,6 @@ constexpr std::array<std::pair<Reserved, std::string_view>, 11>
                      [token](const auto &pair) { return pair.first == token; });
     return it != RESERVED_STRINGS.end() ? it->second : "Unknown Keyword";
 }
-
-// Container tokens
-struct Identifier : std::string {};
-struct Integer : std::string {};
 
 template <typename... Ts> struct overloaded : Ts... {
     using Ts::operator()...; // Inherit operator() from all base classes
@@ -97,7 +99,6 @@ std::vector<Token> tokenize(std::istream &);
 class SyntaxError : public std::exception {
   public:
     SyntaxError(const std::string &msg) : _message(msg) {}
-
     const char *what() const noexcept override { return _message.c_str(); }
 
   private:

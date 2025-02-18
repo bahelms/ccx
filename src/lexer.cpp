@@ -15,7 +15,7 @@
 
     if (it != RESERVED_STRINGS.end())
         return it->first;
-    throw SyntaxError(std::format("Unknown Keyword: {}", keyword));
+    return Reserved::Unknown;
 }
 
 enum class State { Start, Identifier, Integer, Hyphen };
@@ -35,11 +35,11 @@ std::vector<Token> tokenize(std::istream &stream) {
             } else if (std::isdigit(ch)) {
                 buffer.push_back(ch);
                 state = State::Integer;
-            } else if (std::isspace(ch)) {
-                // ignore
             } else if (ch == '-') {
                 state = State::Hyphen;
                 buffer.push_back(ch);
+            } else if (std::isspace(ch)) {
+                // ignore
             } else {
                 std::string kw(1, ch);
                 tokens.emplace_back(lookup_reserved(kw));
@@ -47,11 +47,15 @@ std::vector<Token> tokenize(std::istream &stream) {
             break;
 
         case State::Identifier:
-            // add case to create reserved keyword
             if (std::isalnum(ch) || ch == '_') {
                 buffer.push_back(ch);
             } else {
-                tokens.emplace_back(Identifier{buffer});
+                auto reserved = lookup_reserved(buffer);
+                if (reserved == Reserved::Unknown) {
+                    tokens.emplace_back(Identifier{buffer});
+                } else {
+                    tokens.emplace_back(reserved);
+                }
                 buffer.clear();
                 state = State::Start;
                 stream.putback(ch);
@@ -180,14 +184,14 @@ TEST_CASE("simple valid program") {
     std::stringstream source("int \tmain(void)    {\n return 42; \n}");
     auto tokens = tokenize(source);
     REQUIRE(tokens.size() == 10);
-    /* CHECK(std::get<Reserved>(tokens[0].value) == Reserved::IntType); */
-    /* CHECK(std::get<Identifier>(tokens[1].value) == "main"); */
-    /* CHECK(std::get<Reserved>(tokens[2].value) == Reserved::OpenParen); */
-    /* CHECK(std::get<Reserved>(tokens[3].value) == Reserved::Void); */
-    /* CHECK(std::get<Reserved>(tokens[4].value) == Reserved::CloseParen); */
-    /* CHECK(std::get<Reserved>(tokens[5].value) == Reserved::OpenBrace); */
-    /* CHECK(std::get<Reserved>(tokens[6].value) == Reserved::Return); */
-    /* CHECK(std::get<Integer>(tokens[7].value) == "42"); */
-    /* CHECK(std::get<Reserved>(tokens[8].value) == Reserved::Semicolon); */
-    /* CHECK(std::get<Reserved>(tokens[9].value) == Reserved::CloseBrace); */
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::IntType);
+    CHECK(std::get<Identifier>(tokens[1].value) == "main");
+    CHECK(std::get<Reserved>(tokens[2].value) == Reserved::OpenParen);
+    CHECK(std::get<Reserved>(tokens[3].value) == Reserved::Void);
+    CHECK(std::get<Reserved>(tokens[4].value) == Reserved::CloseParen);
+    CHECK(std::get<Reserved>(tokens[5].value) == Reserved::OpenBrace);
+    CHECK(std::get<Reserved>(tokens[6].value) == Reserved::Return);
+    CHECK(std::get<Integer>(tokens[7].value) == "42");
+    CHECK(std::get<Reserved>(tokens[8].value) == Reserved::Semicolon);
+    CHECK(std::get<Reserved>(tokens[9].value) == Reserved::CloseBrace);
 }
