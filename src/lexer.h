@@ -18,14 +18,12 @@ enum class Reserved {
     Void,
     Return,
 
-    // Control
+    // Operators
     OpenParen,
     CloseParen,
     OpenBrace,
     CloseBrace,
     Semicolon,
-
-    // Operators
     Negate,
     Decrement,
     Complement,
