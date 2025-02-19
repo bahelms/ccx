@@ -1,154 +1,197 @@
+#include <algorithm>
+#include <cctype>
 #include <format>
 #include <iostream>
-#include <regex>
 #include <sstream>
 #include <stdexcept>
 
 #include "doctest.h"
 #include "lexer.h"
 
-const std::regex identifier("^[a-zA-Z_]\\w*$");
-const std::regex constant("^[0-9]+$");
-const std::regex whitespace("\\s");
+[[nodiscard]] constexpr Reserved lookup_reserved(std::string_view keyword) {
+    auto it = std::find_if(
+        RESERVED_STRINGS.begin(), RESERVED_STRINGS.end(),
+        [keyword](const auto &pair) { return pair.second == keyword; });
 
-const std::vector<Token> &Lexer::generate_tokens() {
-    char ch;
-    while (_stream.get(ch)) {
-        std::string str_ch(1, ch);
-
-        if (std::regex_match(str_ch, whitespace)) {
-            flush_char_buffer();
-        } else if (ch == '(' || ch == ')' || ch == ';' || ch == '~' ||
-                   ch == '{' || ch == '}') {
-            flush_char_buffer();
-            _tokens.emplace_back(Token(std::string(1, ch)));
-        } else if (ch == '-') {
-            flush_char_buffer();
-            if (_stream.peek() == '-') {
-                _stream.get(ch);
-                _tokens.emplace_back("--", TokenType::Decrement);
-            } else {
-                _tokens.emplace_back(Token(std::string(1, ch)));
-            }
-        } else {
-            _char_buffer.push_back(ch);
-        }
-    }
-    return _tokens;
+    if (it != RESERVED_STRINGS.end())
+        return it->first;
+    return Reserved::Unknown;
 }
 
-void Lexer::flush_char_buffer() {
-    if (!_char_buffer.empty()) {
-        if (std::regex_match(_char_buffer, constant)) {
-            _tokens.emplace_back(_char_buffer, TokenType::Constant);
-        } else if (std::regex_match(_char_buffer, identifier)) {
-            _tokens.emplace_back(_char_buffer, TokenType::Identifier);
-        } else {
-            throw SyntaxError(std::format(
-                "Identifiers can't begin with a digit: {}", _char_buffer));
+enum class State { Start, Identifier, Integer, Hyphen };
+
+std::vector<Token> tokenize(std::istream &stream) {
+    std::string buffer{};
+    std::vector<Token> tokens{};
+    State state{};
+    char ch;
+
+    while (stream.get(ch)) {
+        switch (state) {
+        case State::Start:
+            if (std::isalpha(ch) || ch == '_') {
+                buffer.push_back(ch);
+                state = State::Identifier;
+            } else if (std::isdigit(ch)) {
+                buffer.push_back(ch);
+                state = State::Integer;
+            } else if (ch == '-') {
+                state = State::Hyphen;
+                buffer.push_back(ch);
+            } else if (std::isspace(ch)) {
+                // ignore
+            } else {
+                std::string kw(1, ch);
+                tokens.emplace_back(lookup_reserved(kw));
+            }
+            break;
+
+        case State::Identifier:
+            if (std::isalnum(ch) || ch == '_') {
+                buffer.push_back(ch);
+            } else {
+                auto reserved = lookup_reserved(buffer);
+                if (reserved == Reserved::Unknown) {
+                    tokens.emplace_back(Identifier{buffer});
+                } else {
+                    tokens.emplace_back(reserved);
+                }
+                buffer.clear();
+                state = State::Start;
+                stream.putback(ch);
+            }
+            break;
+
+        case State::Integer:
+            if (std::isdigit(ch)) {
+                buffer.push_back(ch);
+            } else {
+                tokens.emplace_back(Integer{buffer});
+                buffer.clear();
+                state = State::Start;
+                stream.putback(ch);
+            }
+            break;
+
+        case State::Hyphen:
+            if (ch == '-') {
+                tokens.emplace_back(Reserved::Decrement);
+                state = State::Start;
+            } else {
+                tokens.emplace_back(Reserved::Negate);
+                state = State::Start;
+                buffer.clear();
+                stream.putback(ch);
+            }
+            break;
+
+        default:
+            throw SyntaxError("Unknown state");
         }
-        _char_buffer.clear();
     }
+
+    if (!buffer.empty()) {
+        if (state == State::Integer) {
+            tokens.emplace_back(Integer{buffer});
+        } else if (state == State::Identifier) {
+            tokens.emplace_back(Identifier{buffer});
+        } else if (state == State::Hyphen) {
+            tokens.emplace_back(Reserved::Negate);
+        }
+    }
+
+    return tokens;
+}
+
+TEST_CASE("to_str works") {
+    std::stringstream source("~(-2)");
+    auto tokens = tokenize(source);
+    CHECK(tokens[0].to_str() == "~");
+    CHECK(tokens[1].to_str() == "(");
+    CHECK(tokens[2].to_str() == "-");
+    CHECK(tokens[3].to_str() == "2");
+    CHECK(tokens[4].to_str() == ")");
 }
 
 TEST_CASE("out of order unarys") {
     std::stringstream source("2-");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
+    auto tokens = tokenize(source);
     CHECK(tokens.size() == 2);
-    CHECK(tokens[0].value() == "2");
-    CHECK(tokens[1].value() == "-");
+    CHECK(std::get<Integer>(tokens[0].value) == "2");
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::Negate);
 }
 
 TEST_CASE("unarys with parens") {
     std::stringstream source("~(-2)");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
+    auto tokens = tokenize(source);
     CHECK(tokens.size() == 5);
-    CHECK(tokens[0].value() == "~");
-    CHECK(tokens[1].value() == "(");
-    CHECK(tokens[2].value() == "-");
-    CHECK(tokens[3].value() == "2");
-    CHECK(tokens[4].value() == ")");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::OpenParen);
+    CHECK(std::get<Reserved>(tokens[2].value) == Reserved::Negate);
+    CHECK(std::get<Integer>(tokens[3].value) == "2");
+    CHECK(std::get<Reserved>(tokens[4].value) == Reserved::CloseParen);
 }
 
 TEST_CASE("unary stream") {
     std::stringstream source("-~--~");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
-    CHECK(tokens[0].value() == "-");
-    CHECK(tokens[0].type() == TokenType::Literal);
-    CHECK(tokens[1].value() == "~");
-    CHECK(tokens[1].type() == TokenType::Literal);
-    CHECK(tokens[2].value() == "--");
-    CHECK(tokens[2].type() == TokenType::Decrement);
-    CHECK(tokens[3].value() == "~");
-    CHECK(tokens[3].type() == TokenType::Literal);
+    auto tokens = tokenize(source);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::Complement);
+    CHECK(std::get<Reserved>(tokens[2].value) == Reserved::Decrement);
+    CHECK(std::get<Reserved>(tokens[3].value) == Reserved::Complement);
 }
 
 TEST_CASE("decrement token") {
     std::stringstream source("--");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
-    CHECK(tokens[0].value() == "--");
-    CHECK(tokens[0].type() == TokenType::Decrement);
+    auto tokens = tokenize(source);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Decrement);
 }
 
 TEST_CASE("bitwise complement token") {
     std::stringstream source("~");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
-    CHECK(tokens[0].value() == "~");
-    CHECK(tokens[0].type() == TokenType::Literal);
+    auto tokens = tokenize(source);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Complement);
 }
 
 TEST_CASE("hyphen token") {
     std::stringstream source("-");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
-    CHECK(tokens[0].value() == "-");
-    CHECK(tokens[0].type() == TokenType::Literal);
-}
-
-TEST_CASE("identifiers can't start with a digit") {
-    std::stringstream source("2foo;");
-    Lexer lex(source);
-    REQUIRE_THROWS_WITH_AS(lex.generate_tokens(),
-                           "Identifiers can't begin with a digit: 2foo",
-                           SyntaxError);
+    auto tokens = tokenize(source);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Negate);
 }
 
 TEST_CASE("identifiers can have digits") {
     std::stringstream source("i2x6(");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
-    CHECK(tokens[0].value() == "i2x6");
-    CHECK(tokens[0].type() == TokenType::Identifier);
-    CHECK(tokens[1].value() == "(");
-    CHECK(tokens[1].type() == TokenType::Literal);
+    auto tokens = tokenize(source);
+    CHECK(std::get<Identifier>(tokens[0].value) == "i2x6");
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::OpenParen);
 }
 
-TEST_CASE("constant token") {
+TEST_CASE("integer token") {
     std::stringstream source("2246;");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
-    const Token &constant = tokens[0];
-    CHECK(constant.value() == "2246");
-    CHECK(constant.type() == TokenType::Constant);
-    CHECK(tokens[1].value() == ";");
+    auto tokens = tokenize(source);
+    CHECK(std::get<Integer>(tokens[0].value) == "2246");
+    CHECK(std::get<Reserved>(tokens[1].value) == Reserved::Semicolon);
 }
 
 TEST_CASE("whitespace is ignored") {
     std::stringstream source(" \n\t ;  ");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
+    auto tokens = tokenize(source);
     REQUIRE(tokens.size() == 1);
-    REQUIRE(tokens[0].value() == ";");
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::Semicolon);
 }
 
 TEST_CASE("simple valid program") {
     std::stringstream source("int \tmain(void)    {\n return 42; \n}");
-    Lexer lex(source);
-    auto tokens = lex.generate_tokens();
+    auto tokens = tokenize(source);
     REQUIRE(tokens.size() == 10);
+    CHECK(std::get<Reserved>(tokens[0].value) == Reserved::IntType);
+    CHECK(std::get<Identifier>(tokens[1].value) == "main");
+    CHECK(std::get<Reserved>(tokens[2].value) == Reserved::OpenParen);
+    CHECK(std::get<Reserved>(tokens[3].value) == Reserved::Void);
+    CHECK(std::get<Reserved>(tokens[4].value) == Reserved::CloseParen);
+    CHECK(std::get<Reserved>(tokens[5].value) == Reserved::OpenBrace);
+    CHECK(std::get<Reserved>(tokens[6].value) == Reserved::Return);
+    CHECK(std::get<Integer>(tokens[7].value) == "42");
+    CHECK(std::get<Reserved>(tokens[8].value) == Reserved::Semicolon);
+    CHECK(std::get<Reserved>(tokens[9].value) == Reserved::CloseBrace);
 }

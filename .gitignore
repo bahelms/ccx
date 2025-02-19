@@ -6,4 +6,4 @@ bin/
 test/sources/*.s
 target
 .cache
-benchmarks.txt
+benchmarks/*.txt

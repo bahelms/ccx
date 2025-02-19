@@ -13,10 +13,10 @@ class Exp {
 };
 
 class Constant : public Exp {
-    std::string _value;
+    std::string _value; // this is constructing a new string from a view
 
   public:
-    Constant(std::string v) : _value(v) {}
+    Constant(std::string_view v) : _value(v) {}
 
     auto value() const { return _value; }
     std::string const to_string() override {
