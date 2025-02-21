@@ -27,7 +27,7 @@ void compile(Stage stage, std::string filename) {
         Ast::Parser parser(tokens);
         auto ast = parser.parse();
         if (stage == Stage::Parse) {
-            std::cout << ast.to_string() << std::endl;
+            std::cout << ast.to_str() << std::endl;
             return;
         }
 

@@ -95,7 +95,7 @@ TEST_CASE("Parser::parse_exp for parenthesized expression") {
                                       {Integer{"100"}},
                                       {Reserved::CloseParen}}));
     auto exp = parser.parse_exp();
-    CHECK(exp->to_string() == "Complement(Negate(Constant(100)))");
+    CHECK(exp->to_str() == "Complement(Negate(Constant(100)))");
 
     parser = Parser(std::vector<Token>({{Reserved::Complement},
                                         {Reserved::OpenParen},
@@ -106,8 +106,7 @@ TEST_CASE("Parser::parse_exp for parenthesized expression") {
                                         {Reserved::CloseParen},
                                         {Reserved::CloseParen},
                                         {Reserved::CloseParen}}));
-    CHECK(parser.parse_exp()->to_string() ==
-          "Complement(Negate(Constant(100)))");
+    CHECK(parser.parse_exp()->to_str() == "Complement(Negate(Constant(100)))");
 
     parser = Parser(std::vector<Token>({
         {Reserved::Complement},
@@ -127,14 +126,14 @@ TEST_CASE("Parser::parse_exp for negation as a suffix") {
 TEST_CASE("Parser::parse_exp for negation") {
     Parser parser(std::vector<Token>({{Reserved::Negate}, {Integer{"100"}}}));
     auto exp = parser.parse_exp();
-    CHECK(exp->to_string() == "Negate(Constant(100))");
+    CHECK(exp->to_str() == "Negate(Constant(100))");
 }
 
 TEST_CASE("Parser::parse_exp for bitwise complement") {
     Parser parser(
         std::vector<Token>({{Reserved::Complement}, {Integer{"100"}}}));
     auto exp = parser.parse_exp();
-    CHECK(exp->to_string() == "Complement(Constant(100))");
+    CHECK(exp->to_str() == "Complement(Constant(100))");
 }
 
 TEST_CASE("Parser::parse with extra tokens") {
@@ -159,7 +158,7 @@ TEST_CASE("Parser::parse success") {
         {Reserved::Semicolon},  {Reserved::CloseBrace}};
     Parser parser(tokens);
     auto ast = parser.parse();
-    CHECK(ast.to_string() ==
+    CHECK(ast.to_str() ==
           "Program(\n  Function(\n    name=\"my_function\",\n    "
           "body=Return(Constant(420))\n  )\n)");
 }
@@ -173,8 +172,8 @@ TEST_CASE("Parser::parse_function success") {
         {Reserved::Semicolon},  {Reserved::CloseBrace}};
     Parser parser(tokens);
     auto fn = parser.parse_function();
-    CHECK(fn->to_string() == "Function(\n  name=\"my_function\",\n  "
-                             "body=Return(Constant(420))\n)");
+    CHECK(fn->to_str() == "Function(\n  name=\"my_function\",\n  "
+                          "body=Return(Constant(420))\n)");
 }
 
 TEST_CASE("Parser::parse_function with missing token") {
@@ -205,7 +204,7 @@ TEST_CASE("Parser::parse_statement success") {
         {Reserved::Return}, {Integer{"1234"}}, {Reserved::Semicolon}};
     Parser parser(tokens);
     auto stmt = parser.parse_statement();
-    CHECK(stmt->to_string() == "Return(Constant(1234))");
+    CHECK(stmt->to_str() == "Return(Constant(1234))");
 }
 
 TEST_CASE("Parser::parse_statement with out of order negation") {
@@ -245,16 +244,16 @@ TEST_CASE("Parser::parse_exp error") {
 TEST_CASE("Parser::parse_exp") {
     Parser parser(std::vector<Token>({{Integer{"100"}}}));
     auto exp = parser.parse_exp();
-    CHECK(exp->to_string() == "Constant(100)");
+    CHECK(exp->to_str() == "Constant(100)");
 }
 
 TEST_CASE("expressions have string representations") {
     Constant exp{"42"};
-    CHECK(exp.to_string() == "Constant(42)");
+    CHECK(exp.to_str() == "Constant(42)");
 }
 
 TEST_CASE("statements have string representations") {
     Return stmt(std::make_unique<Constant>("23"));
-    CHECK(stmt.to_string() == "Return(Constant(23))");
+    CHECK(stmt.to_str() == "Return(Constant(23))");
 }
 } // namespace Ast

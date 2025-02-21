@@ -9,17 +9,17 @@ namespace Ast {
 class Exp {
   public:
     virtual ~Exp() = default;
-    virtual std::string const to_string() = 0;
+    virtual std::string to_str() const = 0;
 };
 
 class Constant : public Exp {
-    std::string _value; // this is constructing a new string from a view
+    std::string _value;
 
   public:
     Constant(std::string_view v) : _value(v) {}
 
-    auto value() const { return _value; }
-    std::string const to_string() override {
+    auto value() const noexcept { return _value; }
+    std::string to_str() const override {
         return std::format("Constant({})", _value);
     }
 };
@@ -27,15 +27,15 @@ class Constant : public Exp {
 class UnaryOperator {
   public:
     virtual ~UnaryOperator() = default;
-    virtual std::string const to_string() = 0;
+    virtual std::string_view to_str() const = 0;
 };
 
 class Complement : public UnaryOperator {
-    std::string const to_string() override { return "Complement"; }
+    std::string_view to_str() const override { return "Complement"; }
 };
 
 class Negate : public UnaryOperator {
-    std::string const to_string() override { return "Negate"; }
+    std::string_view to_str() const override { return "Negate"; }
 };
 
 class Unary : public Exp {
@@ -46,18 +46,18 @@ class Unary : public Exp {
     Unary(std::unique_ptr<UnaryOperator> op, std::unique_ptr<Exp> exp)
         : _op(std::move(op)), _exp(std::move(exp)) {}
 
-    std::unique_ptr<UnaryOperator> op() { return std::move(_op); };
+    const UnaryOperator &op() const noexcept { return *_op; };
     std::unique_ptr<Exp> exp() { return std::move(_exp); };
 
-    std::string const to_string() override {
-        return std::format("{}({})", _op->to_string(), _exp->to_string());
+    std::string to_str() const override {
+        return std::format("{}({})", _op->to_str(), _exp->to_str());
     }
 };
 
 class Statement {
   public:
     virtual ~Statement() = default;
-    virtual std::string const to_string() = 0;
+    virtual std::string const to_str() = 0;
 };
 
 class Return : public Statement {
@@ -67,8 +67,8 @@ class Return : public Statement {
     Return(auto e) : _exp(std::move(e)) {}
 
     auto exp() { return std::move(_exp); }
-    std::string const to_string() override {
-        return std::format("Return({})", _exp->to_string());
+    std::string const to_str() override {
+        return std::format("Return({})", _exp->to_str());
     }
 };
 
@@ -79,11 +79,11 @@ class Function {
   public:
     Function(auto n, auto b) : _name(n), _body(std::move(b)) {}
 
-    std::string to_string(int indent = 0) {
+    std::string to_str(int indent = 0) {
         int next_lvl = indent + 2;
         return std::format(
             "Function(\n{:<{}}name=\"{}\",\n{:<{}}body={}\n{:<{}})", "",
-            next_lvl, _name, "", next_lvl, _body->to_string(), "", indent);
+            next_lvl, _name, "", next_lvl, _body->to_str(), "", indent);
     }
 
     std::unique_ptr<Statement> body() { return std::move(_body); }
@@ -99,8 +99,8 @@ class Program {
 
     std::unique_ptr<Function> &fn() { return _fn; }
 
-    std::string to_string() {
-        return std::format("Program(\n  {}\n)", _fn->to_string(2));
+    std::string to_str() {
+        return std::format("Program(\n  {}\n)", _fn->to_str(2));
     }
 };
 
