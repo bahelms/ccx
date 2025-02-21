@@ -108,7 +108,7 @@ class Parser {
     std::vector<Token> _tokens;
     size_t _current_token{0};
 
-    void expect(std::string);
+    void expect(std::string_view);
     Token &take_token();
 
   public:

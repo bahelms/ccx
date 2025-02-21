@@ -14,10 +14,11 @@ Program Parser::parse() {
     }
 
     Program ast(std::move(fn));
+    _current_token = 0; // for strategic benchmarking
     return ast;
 }
 
-void Parser::expect(std::string expected) {
+void Parser::expect(std::string_view expected) {
     if (_current_token == _tokens.size()) {
         throw SyntaxError(std::format("Missing \"{}\"", expected));
     }

@@ -1,25 +1,25 @@
 # CCX - a compiler for the C language
-## Setup
+### Setup
     $ make install
     $ make
 
-## Run the compiler
+### Run the compiler
     $ ./ccx path_to_file.c
 
-## Diplay lexical tokens
+### Diplay lexical tokens
     $ ./ccx --lex path_to_file.c
 
-## Diplay AST
+### Diplay AST
     $ ./ccx --parse path_to_file.c
 
-## Diplay TACKY IR
+### Diplay TACKY IR
     $ ./ccx --tacky path_to_file.c
 
-## Generate assembly file *.s
+### Generate assembly file *.s
     $ ./ccx --codegen path_to_file.c
 
-## Testing
+### Testing
     $ make test
 
-## Run benchmarks
+### Run benchmarks
     $ make benchmark

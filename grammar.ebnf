@@ -4,4 +4,4 @@
 <exp> ::= <int> | <unop> <exp> | "(" <exp> ")"
 <unop> ::= "-" | "~"
 <identifier> ::= ? An identifier token ?
-<int> ::= ? A constant token ?
+<int> ::= ? An integer constant token ?

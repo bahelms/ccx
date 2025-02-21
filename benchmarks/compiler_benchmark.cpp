@@ -13,6 +13,15 @@ static void Lexer_generate_tokens(benchmark::State &state) {
         tokenize(source);
     }
 }
-BENCHMARK(Lexer_generate_tokens);
 
+static void Parser_parse_tokens(benchmark::State &state) {
+    std::stringstream source(code);
+    Ast::Parser parser(tokenize(source));
+    for (auto _ : state) {
+        parser.parse();
+    }
+}
+
+BENCHMARK(Lexer_generate_tokens);
+BENCHMARK(Parser_parse_tokens);
 BENCHMARK_MAIN();

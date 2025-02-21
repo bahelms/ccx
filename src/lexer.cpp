@@ -38,9 +38,7 @@ std::vector<Token> tokenize(std::istream &stream) {
             } else if (ch == '-') {
                 state = State::Hyphen;
                 buffer.push_back(ch);
-            } else if (std::isspace(ch)) {
-                // ignore
-            } else {
+            } else if (!std::isspace(ch)) {
                 std::string kw(1, ch);
                 tokens.emplace_back(lookup_reserved(kw));
             }
