@@ -39,8 +39,8 @@ std::unique_ptr<Val> Generator::convert_exp(std::unique_ptr<Ast::Exp> exp) {
 }
 
 std::unique_ptr<UnaryOperator>
-Generator::convert_unop(std::unique_ptr<Ast::UnaryOperator> op) {
-    if (auto *comp = dynamic_cast<Ast::Complement *>(op.get())) {
+Generator::convert_unop(const Ast::UnaryOperator &op) {
+    if (op.type == Ast::UnaryOperator::Type::Complement) {
         return std::make_unique<Complement>();
     } else {
         return std::make_unique<Negate>();
@@ -51,9 +51,9 @@ Generator::convert_unop(std::unique_ptr<Ast::UnaryOperator> op) {
 //// TESTS ////
 
 TEST_CASE("convert_ast") {
-    auto unary =
-        std::make_unique<Ast::Unary>(std::make_unique<Ast::Complement>(),
-                                     std::make_unique<Ast::Constant>("123"));
+    auto unary = std::make_unique<Ast::Unary>(
+        Ast::UnaryOperator{Ast::UnaryOperator::Type::Complement},
+        std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
     auto program = Ast::Program(std::move(fn));
@@ -67,9 +67,9 @@ TEST_CASE("convert_ast") {
 }
 
 TEST_CASE("convert_function with one statement") {
-    auto unary =
-        std::make_unique<Ast::Unary>(std::make_unique<Ast::Complement>(),
-                                     std::make_unique<Ast::Constant>("123"));
+    auto unary = std::make_unique<Ast::Unary>(
+        Ast::UnaryOperator{Ast::UnaryOperator::Type::Complement},
+        std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
     auto fn = std::make_unique<Ast::Function>("main", std::move(stmt));
     Tacky::Generator gen;
@@ -87,11 +87,14 @@ TEST_CASE("convert_statement for returning a nested unary complement") {
     //              Unary(Complement,
     //                    Unary(Negate, Constant(97)))))
     auto unary1 = std::make_unique<Ast::Unary>(
-        std::make_unique<Ast::Negate>(), std::make_unique<Ast::Constant>("97"));
+        Ast::UnaryOperator{Ast::UnaryOperator::Type::Negate},
+        std::make_unique<Ast::Constant>("97"));
     auto unary2 = std::make_unique<Ast::Unary>(
-        std::make_unique<Ast::Complement>(), std::move(unary1));
-    auto unary3 = std::make_unique<Ast::Unary>(std::make_unique<Ast::Negate>(),
-                                               std::move(unary2));
+        Ast::UnaryOperator{Ast::UnaryOperator::Type::Complement},
+        std::move(unary1));
+    auto unary3 = std::make_unique<Ast::Unary>(
+        Ast::UnaryOperator{Ast::UnaryOperator::Type::Negate},
+        std::move(unary2));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary3));
     Tacky::Generator gen;
     gen.convert_statement(std::move(stmt));
@@ -109,7 +112,7 @@ TEST_CASE("convert_statement for returning a nested unary complement") {
 TEST_CASE("convert_statement for returning a single unary complement") {
     // Return(Unary(Complement, Constant(123)))
     auto unary =
-        std::make_unique<Ast::Unary>(std::make_unique<Ast::Complement>(),
+        std::make_unique<Ast::Unary>(Ast::UnaryOperator::complement(),
                                      std::make_unique<Ast::Constant>("123"));
     auto stmt = std::make_unique<Ast::Return>(std::move(unary));
     Tacky::Generator gen;
@@ -132,9 +135,9 @@ TEST_CASE("convert_statement for returning a constant") {
 }
 
 TEST_CASE("convert_exp for a unary negate exp") {
-    auto op = std::make_unique<Ast::Negate>();
+    auto op = Ast::UnaryOperator{Ast::UnaryOperator::Type::Negate};
     auto exp = std::make_unique<Ast::Constant>("420");
-    auto unary = std::make_unique<Ast::Unary>(std::move(op), std::move(exp));
+    auto unary = std::make_unique<Ast::Unary>(op, std::move(exp));
     Tacky::Generator gen;
     auto dst = gen.convert_exp(std::move(unary));
 
@@ -147,9 +150,9 @@ TEST_CASE("convert_exp for a unary negate exp") {
 }
 
 TEST_CASE("convert_exp for a unary complement exp") {
-    auto op = std::make_unique<Ast::Complement>();
+    auto op = Ast::UnaryOperator{Ast::UnaryOperator::Type::Complement};
     auto exp = std::make_unique<Ast::Constant>("420");
-    auto unary = std::make_unique<Ast::Unary>(std::move(op), std::move(exp));
+    auto unary = std::make_unique<Ast::Unary>(op, std::move(exp));
     Tacky::Generator gen;
 
     auto dst = gen.convert_exp(std::move(unary));

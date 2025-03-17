@@ -136,8 +136,7 @@ class Generator {
     int _temp_var_counter{};
     std::vector<std::unique_ptr<Instruction>> _instrs{};
 
-    std::unique_ptr<UnaryOperator>
-    convert_unop(std::unique_ptr<Ast::UnaryOperator> op);
+    std::unique_ptr<UnaryOperator> convert_unop(const Ast::UnaryOperator &op);
 
     std::string temp_name() {
         return std::format("main.{}", _temp_var_counter++);

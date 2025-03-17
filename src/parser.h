@@ -24,33 +24,39 @@ class Constant : public Exp {
     }
 };
 
-class UnaryOperator {
-  public:
-    virtual ~UnaryOperator() = default;
-    virtual std::string_view to_str() const = 0;
-};
+struct UnaryOperator {
+    enum class Type { Complement, Negate };
+    Type type{};
 
-class Complement : public UnaryOperator {
-    std::string_view to_str() const override { return "Complement"; }
-};
+    static UnaryOperator complement() {
+        return UnaryOperator{UnaryOperator::Type::Complement};
+    }
 
-class Negate : public UnaryOperator {
-    std::string_view to_str() const override { return "Negate"; }
+    std::string_view to_str() const {
+        switch (type) {
+        case Type::Complement:
+            return "Complement";
+        case Type::Negate:
+            return "Negate";
+        default:
+            return "Unknown UnaryOperator";
+        }
+    }
 };
 
 class Unary : public Exp {
-    std::unique_ptr<UnaryOperator> _op;
+    UnaryOperator _op;
     std::unique_ptr<Exp> _exp;
 
   public:
-    Unary(std::unique_ptr<UnaryOperator> op, std::unique_ptr<Exp> exp)
+    Unary(UnaryOperator op, std::unique_ptr<Exp> exp)
         : _op(std::move(op)), _exp(std::move(exp)) {}
 
-    const UnaryOperator &op() const noexcept { return *_op; };
+    const UnaryOperator &op() const noexcept { return _op; };
     std::unique_ptr<Exp> exp() { return std::move(_exp); };
 
     std::string to_str() const override {
-        return std::format("{}({})", _op->to_str(), _exp->to_str());
+        return std::format("{}({})", _op.to_str(), _exp->to_str());
     }
 };
 

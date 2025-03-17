@@ -67,10 +67,11 @@ std::unique_ptr<Exp> Parser::parse_exp() {
     }
 
     if (token.is(Reserved::Complement)) {
-        return std::make_unique<Unary>(std::make_unique<Complement>(),
-                                       parse_exp());
+        return std::make_unique<Unary>(
+            UnaryOperator{UnaryOperator::Type::Complement}, parse_exp());
     } else if (token.is(Reserved::Negate)) {
-        return std::make_unique<Unary>(std::make_unique<Negate>(), parse_exp());
+        return std::make_unique<Unary>(
+            UnaryOperator{UnaryOperator::Type::Negate}, parse_exp());
     } else if (token.is(Reserved::OpenParen)) {
         auto exp = parse_exp();
         expect(")");
@@ -86,6 +87,19 @@ TEST_CASE("Parser::parse_exp for decrement") {
         std::vector<Token>({{Reserved::Decrement}, {Integer{"100"}}}));
     REQUIRE_THROWS_WITH_AS(parser.parse_exp(), "Invalid expression: --",
                            SyntaxError);
+}
+
+TEST_CASE("Parser::parse_exp for nested unaries") {
+    Parser parser(std::vector<Token>({{Reserved::Complement},
+                                      {Reserved::OpenParen},
+                                      {Reserved::Negate},
+                                      {Integer{"100"}},
+                                      {Reserved::CloseParen}}));
+    auto exp = parser.parse_exp();
+    auto unary = dynamic_cast<Ast::Unary *>(exp.get());
+    REQUIRE(unary);
+    /* auto first_op = dynamic_cast<Ast::Complement *>(unary); */
+    /* CHECK(first_op->to_str() == "Complement"); */
 }
 
 TEST_CASE("Parser::parse_exp for parenthesized expression") {
